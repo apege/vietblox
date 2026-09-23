@@ -124,26 +124,26 @@ function CatMascot() {
 
 export default function WhyVietnamSection({ onReadMore }: WhyVietnamSectionProps) {
   return (
-    <section id="kenapa-vietnam" className="py-10 lg:py-14 relative">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="kenapa-vietnam" className="py-8 sm:py-12 lg:py-14 relative">
+      <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8">
         
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-stretch">
           
           {/* Left Main Card: Explanation + Mascot Illustration */}
-          <div className="lg:col-span-8 bg-white/95 backdrop-blur-xl rounded-3xl p-6 sm:p-8 lg:p-9 border border-pink-100/90 shadow-[0_12px_40px_rgba(255,105,180,0.12)] flex flex-col md:flex-row items-center justify-between gap-6 relative">
+          <div className="lg:col-span-8 bg-white/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-8 lg:p-9 border border-pink-100/90 shadow-[0_12px_40px_rgba(255,105,180,0.12)] flex flex-col md:flex-row items-center justify-between gap-5 sm:gap-6 relative">
             
             {/* Left Copywriting */}
             <div className="flex-1 flex flex-col items-start z-10">
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-[1.25] mb-3">
-                <span className="relative inline-block pb-2">
+              <h2 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight leading-[1.2] sm:leading-[1.25] mb-2 sm:mb-3">
+                <span className="relative inline-block pb-1.5 sm:pb-2">
                   Kenapa Robux
-                  <span className="absolute bottom-0 left-0 w-12 h-1 bg-[#FFB800] rounded-full" />
+                  <span className="absolute bottom-0 left-0 w-10 sm:w-12 h-1 bg-[#FFB800] rounded-full" />
                 </span>{" "}
-                <br />
-                <span className="block mt-0.5">Vietnam Lebih Murah?</span>
+                <br className="hidden sm:inline" />
+                <span className="sm:block mt-0.5">Vietnam Lebih Murah?</span>
               </h2>
 
-              <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed mb-6 max-w-md">
+              <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed mb-4 sm:mb-6 max-w-md">
                 Harga Robux di Vietnam memang lebih rendah dibandingkan region lain. VietBlox memanfaatkan harga regional tersebut melalui metode resmi, sehingga kamu bisa mendapatkan Robux dengan harga lebih hemat, aman, dan legal.
               </p>
 
@@ -151,15 +151,15 @@ export default function WhyVietnamSection({ onReadMore }: WhyVietnamSectionProps
                 onClick={onReadMore || (() => {
                   window.open("https://wa.me/6281234567890?text=Halo%20Admin%20VietBlox,%20mau%20tanya%20detail%20tentang%20Robux%20Region%20Vietnam", "_blank");
                 })}
-                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-pink-300 text-[#FF2E74] font-extrabold text-xs sm:text-sm bg-pink-50/40 hover:bg-pink-100/70 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-xs"
+                className="inline-flex items-center gap-2 px-5 sm:px-6 py-2 sm:py-2.5 rounded-full border border-pink-300 text-[#FF2E74] font-extrabold text-xs sm:text-sm bg-pink-50/40 hover:bg-pink-100/70 hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-xs"
               >
                 <span>Baca Penjelasan Lengkap</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             </div>
 
-            {/* Right Mascot with Speech Bubbles Artwork (Properly centered & not zoomed) */}
-            <div className="relative w-64 sm:w-72 h-56 flex-shrink-0 flex items-center justify-center">
+            {/* Right Mascot with Speech Bubbles Artwork */}
+            <div className="relative w-full max-w-[260px] sm:w-72 h-48 sm:h-56 flex-shrink-0 flex items-center justify-center scale-90 sm:scale-100">
               
               {/* Floating Star 1 */}
               <div className="absolute top-4 left-6 text-[#FFB800] animate-float-slow text-base">
@@ -172,22 +172,22 @@ export default function WhyVietnamSection({ onReadMore }: WhyVietnamSectionProps
 
               {/* Speech Bubble 1: Legal & Aman */}
               <div className="absolute top-1 left-2 z-20 animate-float-slow">
-                <div className="px-3 py-1.5 rounded-2xl bg-[#FFF9E6] border border-amber-200/90 shadow-xs text-[11px] font-black text-amber-900">
+                <div className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-2xl bg-[#FFF9E6] border border-amber-200/90 shadow-xs text-[10px] sm:text-[11px] font-black text-amber-900">
                   Legal & Aman
                 </div>
               </div>
 
               {/* Speech Bubble 2: Region Vietnam */}
               <div className="absolute top-0 right-1 z-20 animate-float-reverse">
-                <div className="px-3 py-1.5 rounded-2xl bg-[#E8F8F0] border border-emerald-200/90 shadow-xs text-[11px] font-black text-emerald-800 flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <div className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-2xl bg-[#E8F8F0] border border-emerald-200/90 shadow-xs text-[10px] sm:text-[11px] font-black text-emerald-800 flex items-center gap-1.5">
+                  <ShieldCheck className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-emerald-600" />
                   <span>Region Vietnam</span>
                 </div>
               </div>
 
               {/* Speech Bubble 3: Harga Lebih Hemat */}
-              <div className="absolute bottom-6 right-0 z-20 animate-float-slow">
-                <div className="px-3 py-1.5 rounded-2xl bg-[#FFF5E5] border border-amber-200/90 shadow-xs text-[11px] font-black text-amber-900">
+              <div className="absolute bottom-4 sm:bottom-6 right-0 z-20 animate-float-slow">
+                <div className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-2xl bg-[#FFF5E5] border border-amber-200/90 shadow-xs text-[10px] sm:text-[11px] font-black text-amber-900">
                   Harga Lebih Hemat
                 </div>
               </div>
@@ -202,38 +202,38 @@ export default function WhyVietnamSection({ onReadMore }: WhyVietnamSectionProps
           </div>
 
           {/* Right Stats Card (Compact, snug fit without empty vertical gaps) */}
-          <div className="lg:col-span-4 bg-white/95 backdrop-blur-xl rounded-3xl p-5 sm:p-6 border border-pink-100/90 shadow-[0_12px_40px_rgba(255,105,180,0.12)] flex flex-col justify-center gap-3">
+          <div className="lg:col-span-4 bg-white/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-pink-100/90 shadow-[0_12px_40px_rgba(255,105,180,0.12)] flex flex-col justify-center gap-2.5 sm:gap-3">
             
             {/* Top Row: 10K+ & 4.9* */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
               {/* Stat 1 */}
-              <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-xs flex flex-col items-center justify-center text-center hover:border-pink-200 transition-colors">
-                <span className="text-2xl sm:text-3xl font-black text-[#FF2E74] tracking-tight">
+              <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white border border-slate-100 shadow-xs flex flex-col items-center justify-center text-center hover:border-pink-200 transition-colors">
+                <span className="text-xl sm:text-3xl font-black text-[#FF2E74] tracking-tight">
                   10K+
                 </span>
-                <span className="text-[11px] font-bold text-slate-500 mt-0.5">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 mt-0.5">
                   Order Selesai
                 </span>
               </div>
 
               {/* Stat 2 */}
-              <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-xs flex flex-col items-center justify-center text-center hover:border-pink-200 transition-colors">
-                <div className="flex items-center gap-0.5 text-2xl sm:text-3xl font-black text-[#FF2E74] tracking-tight">
+              <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white border border-slate-100 shadow-xs flex flex-col items-center justify-center text-center hover:border-pink-200 transition-colors">
+                <div className="flex items-center gap-0.5 text-xl sm:text-3xl font-black text-[#FF2E74] tracking-tight">
                   <span>4.9</span>
-                  <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-[#FF2E74] text-[#FF2E74]" />
+                  <Star className="w-3.5 h-3.5 sm:w-5 sm:h-5 fill-[#FF2E74] text-[#FF2E74]" />
                 </div>
-                <span className="text-[11px] font-bold text-slate-500 mt-0.5">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 mt-0.5">
                   Customer Rating
                 </span>
               </div>
             </div>
 
             {/* Bottom Row: 24/7 Fast Response */}
-            <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-xs flex flex-col items-center justify-center text-center hover:border-pink-200 transition-colors">
-              <span className="text-2xl sm:text-3xl font-black text-[#FF2E74] tracking-tight">
+            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white border border-slate-100 shadow-xs flex flex-col items-center justify-center text-center hover:border-pink-200 transition-colors">
+              <span className="text-xl sm:text-3xl font-black text-[#FF2E74] tracking-tight">
                 24/7
               </span>
-              <span className="text-[11px] font-bold text-slate-500 mt-0.5">
+              <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 mt-0.5">
                 Fast Response
               </span>
             </div>
