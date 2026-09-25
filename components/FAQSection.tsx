@@ -30,41 +30,41 @@ export default function FAQSection() {
   ];
 
   return (
-    <section id="faq" className="py-20 bg-white/70 border-t border-pink-100">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pink-50 border border-pink-100 text-[#FF2E74] text-xs font-bold mb-3">
+    <section id="faq" className="py-10 sm:py-16 lg:py-20 bg-white/70 border-t border-pink-100">
+      <div className="max-w-4xl mx-auto px-3.5 sm:px-6 lg:px-8">
+        <div className="text-center mb-8 sm:mb-12">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pink-50 border border-pink-100 text-[#FF2E74] text-xs font-bold mb-2 sm:mb-3">
             <HelpCircle className="w-3.5 h-3.5" /> Tanya Jawab
           </div>
-          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+          <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
             Frequently Asked <span className="text-[#FF2E74]">Questions</span>
           </h2>
-          <p className="text-sm sm:text-base text-slate-600 mt-2 font-medium">
+          <p className="text-xs sm:text-base text-slate-600 mt-1.5 sm:mt-2 font-medium">
             Pertanyaan yang sering ditanyakan seputar layanan VietBlox
           </p>
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2.5 sm:gap-3">
           {faqs.map((faq, index) => {
             const isOpen = openIndex === index;
             return (
               <div
                 key={index}
-                className="rounded-2xl border border-pink-100 bg-white overflow-hidden shadow-sm transition-all"
+                className="rounded-2xl border border-pink-100 bg-white overflow-hidden shadow-xs hover:border-pink-200 transition-all"
               >
                 <button
                   onClick={() => setOpenIndex(isOpen ? null : index)}
-                  className="w-full px-6 py-4.5 text-left flex items-center justify-between gap-4 font-bold text-slate-800 text-sm sm:text-base hover:text-[#FF2E74] transition-colors cursor-pointer"
+                  className="w-full px-4 py-3.5 sm:px-6 sm:py-4.5 text-left flex items-center justify-between gap-3 sm:gap-4 font-bold text-slate-800 text-xs sm:text-base hover:text-[#FF2E74] transition-colors cursor-pointer"
                 >
-                  <span>{faq.q}</span>
+                  <span className="leading-snug">{faq.q}</span>
                   <ChevronDown
-                    className={`w-5 h-5 text-slate-400 transition-transform duration-200 flex-shrink-0 ${
+                    className={`w-4 h-4 sm:w-5 sm:h-5 text-slate-400 transition-transform duration-200 flex-shrink-0 ${
                       isOpen ? "rotate-180 text-[#FF2E74]" : ""
                     }`}
                   />
                 </button>
                 {isOpen && (
-                  <div className="px-6 pb-5 pt-1 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-pink-50">
+                  <div className="px-4 pb-4 pt-1 sm:px-6 sm:pb-5 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-pink-50">
                     {faq.a}
                   </div>
                 )}
