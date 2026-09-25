@@ -1,18 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Fredoka } from "next/font/google";
 import "./globals.css";
-
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-plus-jakarta",
-});
-
-const fredoka = Fredoka({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-fredoka",
-});
 
 export const metadata: Metadata = {
   title: "VietBlox - Distributor Robux Region Vietnam Termurah & Terpercaya",
@@ -29,7 +16,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={`${plusJakartaSans.variable} ${fredoka.variable} scroll-smooth`}>
+    <html lang="id" className="scroll-smooth">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body className="min-h-screen bg-[#FFF5F8] text-[#1E293B] antialiased font-sans selection:bg-[#FF4D8D] selection:text-white">
         {children}
       </body>
