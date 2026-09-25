@@ -87,6 +87,7 @@ export default function CheckoutModal({
 
   const handleProceed = () => {
     if (!waNumber.trim() || !paymentMethod) return;
+
     if (paymentMethod === "website") {
       setStep("qris");
     } else {
@@ -94,6 +95,33 @@ export default function CheckoutModal({
       const msg = encodeURIComponent(
         `Halo Admin VietBlox, saya ingin Top Up Robux:\n- Username Roblox: ${username}\n- Paket: ${robuxAmount.toLocaleString("id-ID")} Robux (${price})\n- No. WA: ${waNumber}\n\nMohon diproses ya kak!`
       );
+
+      // Save new order to admin store
+      try {
+        const stored = JSON.parse(localStorage.getItem("vietblox_admin_orders_v2") || "[]");
+        const newOrder = {
+          id: `VBX${Math.floor(10000000 + Math.random() * 89999999)}`,
+          username: username,
+          robloxUserId: `${Math.floor(1000000000 + Math.random() * 8999999999)}`,
+          avatarUrl: null,
+          robuxAmount: robuxAmount,
+          price: price,
+          numericPrice: parseInt(price.replace(/[^0-9]/g, "")) || 0,
+          paymentMethod: "WHATSAPP",
+          status: "masuk",
+          statusLabel: "Menunggu Bayar",
+          date: `${new Date().getDate()} ${new Date().toLocaleString("id-ID", { month: "short" })}, ${new Date().getHours().toString().padStart(2, "0")}.${new Date().getMinutes().toString().padStart(2, "0")}`,
+          fullDate: `${new Date().getDate()} ${new Date().toLocaleString("id-ID", { month: "long" })} 2026 pukul ${new Date().getHours().toString().padStart(2, "0")}:${new Date().getMinutes().toString().padStart(2, "0")} WIB`,
+          phone: `+62${waNumber}`,
+          customerNotes: "Pemesanan via WhatsApp Direct",
+          adminNotes: "",
+          paymentProof: null,
+        };
+        localStorage.setItem("vietblox_admin_orders_v1", JSON.stringify([newOrder, ...stored]));
+      } catch (e) {
+        console.error("Failed to save order", e);
+      }
+
       window.open(`https://wa.me/${WA_NUMBER}?text=${msg}`, "_blank");
       setWaOpened(true);
       setTimeout(() => setStep("success"), 800);
@@ -103,6 +131,32 @@ export default function CheckoutModal({
   const handleSubmitProof = () => {
     if (!uploadedFile) return;
     setIsSubmitting(true);
+
+    // Save new order to admin store
+    try {
+      const stored = JSON.parse(localStorage.getItem("vietblox_admin_orders_v2") || "[]");
+      const newOrder = {
+        id: `VBX${Math.floor(10000000 + Math.random() * 89999999)}`,
+        username: username,
+        robloxUserId: `${Math.floor(1000000000 + Math.random() * 8999999999)}`,
+        avatarUrl: null,
+        robuxAmount: robuxAmount,
+        price: price,
+        numericPrice: parseInt(price.replace(/[^0-9]/g, "")) || 0,
+        paymentMethod: "WEBSITE",
+        status: "masuk",
+        statusLabel: "Menunggu Bayar",
+        date: `${new Date().getDate()} ${new Date().toLocaleString("id-ID", { month: "short" })}, ${new Date().getHours().toString().padStart(2, "0")}.${new Date().getMinutes().toString().padStart(2, "0")}`,
+        fullDate: `${new Date().getDate()} ${new Date().toLocaleString("id-ID", { month: "long" })} 2026 pukul ${new Date().getHours().toString().padStart(2, "0")}:${new Date().getMinutes().toString().padStart(2, "0")} WIB`,
+        phone: `+62${waNumber}`,
+        customerNotes: "Pemesanan website QRIS (Bukti Transfer diunggah)",
+        adminNotes: "",
+        paymentProof: uploadPreview || "/payments/qris.svg",
+      };
+      localStorage.setItem("vietblox_admin_orders_v2", JSON.stringify([newOrder, ...stored]));
+    } catch (e) {
+      console.error("Failed to save order", e);
+    }
 
     // Direct to WhatsApp to send confirmation & attach proof to admin
     const msg = encodeURIComponent(
