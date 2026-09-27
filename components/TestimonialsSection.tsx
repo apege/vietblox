@@ -2,7 +2,18 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, Star, Sparkles, MessageSquare } from "lucide-react";
+
+interface TestimonialData {
+  id: string;
+  username: string;
+  time: string;
+  comment: string;
+  avatarSrc: string;
+  robuxAmount: string;
+  rating: number;
+  adminReply?: string | null;
+}
 
 export default function TestimonialsSection() {
   const sliderRef = useRef<HTMLDivElement>(null);
@@ -10,44 +21,41 @@ export default function TestimonialsSection() {
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeftState, setScrollLeftState] = useState(0);
+  const [testimonials, setTestimonials] = useState<TestimonialData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const testimonials = [
-    {
-      username: "@syaa.roblox",
-      time: "1 hari yang lalu",
-      comment: "Trusted banget! udah langganan disini, selalu aman dan cepat 💖",
-      avatarSrc: "/logo_background.PNG",
-      robuxAmount: "+1200",
-    },
-    {
-      username: "@rifkaxz",
-      time: "2 jam yang lalu",
-      comment: "Robux udah masuk kak, makasih banyak! prosesnya cepet banget <3",
-      avatarSrc: "/logo_background.PNG",
-      robuxAmount: "+800",
-    },
-    {
-      username: "@kentanggg",
-      time: "2 hari yang lalu",
-      comment: "Harga paling murah sih menurutku, mantap VietBlox! 👏",
-      avatarSrc: "/logo_background.PNG",
-      robuxAmount: "+2500",
-    },
-    {
-      username: "@alvin_rbx",
-      time: "3 hari yang lalu",
-      comment: "Awalnya ragu karena murah banget, pas coba 5000 Robux langsung mendarat 2 menit! 🔥",
-      avatarSrc: "/logo_background.PNG",
-      robuxAmount: "+5000",
-    },
-    {
-      username: "@manda.bloxfan",
-      time: "4 hari yang lalu",
-      comment: "Adminnya ramah banget dan fast respon! Top up region Vietnam termurah se-Indonesia.",
-      avatarSrc: "/logo_background.PNG",
-      robuxAmount: "+1600",
-    },
-  ];
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        const res = await fetch("/api/testimonials");
+        const data = await res.json();
+        if (data.success && Array.isArray(data.testimonials) && data.testimonials.length > 0) {
+          const mapped: TestimonialData[] = data.testimonials.map((row: any) => {
+            const date = new Date(row.created_at || Date.now());
+            const diffHours = Math.floor((Date.now() - date.getTime()) / 3600000);
+            const timeLabel = diffHours < 1 ? "Baru saja" : diffHours < 24 ? `${diffHours} jam lalu` : `${Math.floor(diffHours / 24)} hari lalu`;
+            return {
+              id: String(row.id),
+              username: `@${String(row.name || "").replace(/^@+/, "")}`,
+              time: timeLabel,
+              comment: row.message,
+              avatarSrc: row.image_path || "/logo_background.PNG",
+              robuxAmount: row.robux ? `+${Number(row.robux).toLocaleString("id-ID")}` : "+1000",
+              rating: row.rating || 5,
+              adminReply: row.admin_reply || null,
+            };
+          });
+          setTestimonials(mapped);
+        }
+      } catch (err) {
+        console.warn("Could not fetch testimonials:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTestimonials();
+  }, []);
 
   // Sync scroll position to calculate active dot
   const handleScroll = () => {
@@ -159,87 +167,124 @@ export default function TestimonialsSection() {
               </button>
 
               {/* Horizontal Scrollable Carousel */}
-              <div
-                ref={sliderRef}
-                onScroll={handleScroll}
-                onMouseDown={handleMouseDown}
-                onMouseLeave={handleMouseLeaveOrUp}
-                onMouseUp={handleMouseLeaveOrUp}
-                onMouseMove={handleMouseMove}
-                className="flex items-stretch gap-3 sm:gap-4 overflow-x-auto no-scrollbar py-2 px-0.5 sm:px-1 scroll-smooth cursor-grab active:cursor-grabbing select-none snap-x snap-mandatory"
-              >
-                {testimonials.map((item, idx) => (
+              {testimonials.length > 0 ? (
+                <>
                   <div
-                    key={idx}
-                    className="flex-shrink-0 w-[78vw] max-w-[270px] sm:w-[295px] rounded-2xl sm:rounded-3xl p-4 sm:p-5 bg-white border border-slate-100 hover:border-pink-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between snap-start"
+                    ref={sliderRef}
+                    onScroll={handleScroll}
+                    onMouseDown={handleMouseDown}
+                    onMouseLeave={handleMouseLeaveOrUp}
+                    onMouseUp={handleMouseLeaveOrUp}
+                    onMouseMove={handleMouseMove}
+                    className="flex items-stretch gap-3 sm:gap-4 overflow-x-auto no-scrollbar py-2 px-0.5 sm:px-1 scroll-smooth cursor-grab active:cursor-grabbing select-none snap-x snap-mandatory"
                   >
-                    {/* User Header */}
-                    <div className="flex items-center gap-2.5 sm:gap-3 mb-3">
-                      <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-pink-100 flex-shrink-0 shadow-xs">
-                        <Image
-                          src={item.avatarSrc}
-                          alt={item.username}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xs sm:text-sm font-black text-slate-900 leading-tight truncate">
-                          {item.username}
-                        </span>
-                        <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium mt-0.5">
-                          {item.time}
-                        </span>
-                      </div>
-                    </div>
+                    {testimonials.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="flex-shrink-0 w-[78vw] max-w-[270px] sm:w-[295px] rounded-2xl sm:rounded-3xl p-4 sm:p-5 bg-white border border-slate-100 hover:border-pink-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between snap-start"
+                      >
+                        {/* User Header */}
+                        <div className="flex items-center gap-2.5 sm:gap-3 mb-3">
+                          <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-pink-100 flex-shrink-0 shadow-xs">
+                            <Image
+                              src={item.avatarSrc}
+                              alt={item.username}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs sm:text-sm font-black text-slate-900 leading-tight truncate">
+                              {item.username}
+                            </span>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              {/* 5 Stars */}
+                              <div className="flex items-center gap-0.5">
+                                {Array.from({ length: 5 }).map((_, s) => (
+                                  <Star
+                                    key={s}
+                                    className={`w-2.5 h-2.5 ${
+                                      s < item.rating
+                                        ? "text-amber-400 fill-amber-400"
+                                        : "text-slate-200"
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-[10px] text-slate-400">•</span>
+                              <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium">
+                                {item.time}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
 
-                    {/* Comment */}
-                    <p className="text-xs sm:text-[13px] text-slate-700 leading-relaxed font-semibold mb-3.5 sm:mb-4 line-clamp-3 sm:line-clamp-none">
-                      {item.comment}
-                    </p>
+                        {/* Comment */}
+                        <p className="text-xs sm:text-[13px] text-slate-700 leading-relaxed font-semibold mb-2.5 line-clamp-3 sm:line-clamp-none">
+                          {item.comment}
+                        </p>
 
-                    {/* Sleek Dark Roblox Balance Card */}
-                    <div className="mt-auto bg-[#0E1322] rounded-xl sm:rounded-2xl p-3 sm:p-3.5 flex items-center gap-2.5 sm:gap-3 shadow-sm border border-slate-800/80">
-                      <div className="relative w-6 h-6 sm:w-7 sm:h-7 flex-shrink-0">
-                        <Image
-                          src="/robux.webp"
-                          alt="Robux"
-                          fill
-                          className="object-contain"
-                        />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wider leading-none">
-                          Robux Saldo
-                        </span>
-                        <span className="text-xs sm:text-sm font-black text-white mt-1 leading-none tracking-tight">
-                          {item.robuxAmount}
-                        </span>
-                      </div>
-                    </div>
+                        {/* Admin Reply Speech Bubble if exists */}
+                        {item.adminReply && (
+                          <div className="mb-3 p-2.5 rounded-xl bg-gradient-to-br from-pink-50/95 to-rose-50/80 border border-pink-200/80 flex flex-col gap-1 shadow-2xs">
+                            <div className="flex items-center gap-1.5 text-[10px] font-black text-[#FF2E74]">
+                              <Sparkles className="w-3 h-3 shrink-0" />
+                              <span>Balasan VietBlox Admin:</span>
+                            </div>
+                            <p className="text-[11px] text-slate-700 font-medium leading-relaxed italic pl-0.5">
+                              "{item.adminReply}"
+                            </p>
+                          </div>
+                        )}
 
+                        {/* Sleek Dark Roblox Balance Card */}
+                        <div className="mt-auto bg-[#0E1322] rounded-xl sm:rounded-2xl p-3 sm:p-3.5 flex items-center gap-2.5 sm:gap-3 shadow-sm border border-slate-800/80">
+                          <div className="relative w-6 h-6 sm:w-7 sm:h-7 flex-shrink-0">
+                            <Image
+                              src="/robux.webp"
+                              alt="Robux"
+                              fill
+                              className="object-contain"
+                            />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wider leading-none">
+                              Robux
+                            </span>
+                            <span className="text-xs sm:text-sm font-black text-white mt-1 leading-none tracking-tight">
+                              {item.robuxAmount}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
 
-              {/* Dynamic Interactive Dots Pagination */}
-              <div className="flex items-center justify-center gap-1.5 mt-4 sm:mt-5">
-                {testimonials.map((_, idx) => {
-                  const isActive = activeIndex === idx;
-                  return (
-                    <button
-                      key={idx}
-                      onClick={() => scrollToSlide(idx)}
-                      aria-label={`Lihat testimoni ke-${idx + 1}`}
-                      className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                        isActive
-                          ? "w-6 bg-[#FF2E74] shadow-xs"
-                          : "w-2 bg-pink-200 hover:bg-pink-300"
-                      }`}
-                    />
-                  );
-                })}
-              </div>
+                  {/* Dynamic Interactive Dots Pagination */}
+                  <div className="flex items-center justify-center gap-1.5 mt-4 sm:mt-5">
+                    {testimonials.map((_, idx) => {
+                      const isActive = activeIndex === idx;
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => scrollToSlide(idx)}
+                          aria-label={`Lihat testimoni ke-${idx + 1}`}
+                          className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                            isActive
+                              ? "w-6 bg-[#FF2E74] shadow-xs"
+                              : "w-2 bg-pink-200 hover:bg-pink-300"
+                          }`}
+                        />
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-10 px-4 text-center rounded-2xl bg-pink-50/50 border border-dashed border-pink-200">
+                  <p className="text-sm font-bold text-slate-700">Belum ada testimoni terbaru</p>
+                  <p className="text-xs text-slate-500 mt-1">Jadilah yang pertama memberikan ulasan setelah transaksi!</p>
+                </div>
+              )}
 
             </div>
 
