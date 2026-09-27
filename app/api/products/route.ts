@@ -82,7 +82,21 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error: any) {
     console.error("GET /api/products error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    // Return default packages safely with 200 OK
+    const mappedDefaults = defaultPackages.map((p) => ({
+      id: p.id,
+      name: `${p.amount.toLocaleString("id-ID")} Robux`,
+      amount: p.amount,
+      price: p.price,
+      numericPrice: p.numericPrice,
+      isActive: p.status !== "inactive",
+      isSoldOut: p.status === "sold_out",
+      inStock: p.inStock,
+      status: p.status,
+      displayOrder: p.amount,
+      imagePath: null,
+    }));
+    return NextResponse.json({ success: true, products: mappedDefaults, warning: error.message });
   }
 }
 
