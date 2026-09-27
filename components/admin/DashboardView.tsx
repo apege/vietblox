@@ -15,7 +15,7 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
-import { OrderItem } from "@/lib/adminStore";
+import { OrderItem, cleanUsername } from "@/lib/adminStore";
 
 interface DashboardViewProps {
   orders: OrderItem[];
@@ -80,7 +80,7 @@ export default function DashboardView({
         </div>
 
         {/* 3D Mascot Character Standing Flush on Bottom Edge */}
-        <div className="absolute right-0 sm:right-4 lg:right-8 bottom-0 z-10 w-[240px] sm:w-[320px] lg:w-[380px] h-[300px] sm:h-[370px] lg:h-[410px] pointer-events-none flex items-end justify-center">
+        <div className="absolute -right-6 sm:right-4 lg:right-8 bottom-0 z-10 w-[180px] sm:w-[290px] lg:w-[380px] h-[240px] sm:h-[340px] lg:h-[410px] pointer-events-none flex items-end justify-center opacity-60 sm:opacity-100 transition-opacity">
           <div className="relative w-full h-full flex items-end justify-center">
             
             {/* Mascot Image */}
@@ -102,7 +102,7 @@ export default function DashboardView({
             </div>
 
             {/* Floating Pill Badge: More Robux More Happiness */}
-            <div className="absolute top-[26%] right-0 sm:right-2 z-20 animate-float-reverse scale-90 sm:scale-100 origin-right">
+            <div className="absolute top-[26%] right-0 sm:right-2 z-20 animate-float-reverse scale-90 sm:scale-100 origin-right hidden sm:flex">
               <div className="px-3 py-1.5 rounded-xl bg-white/95 backdrop-blur-md shadow-[0_6px_18px_rgba(255,46,116,0.22)] border border-pink-100 flex items-center gap-1.5 text-[11px] font-black text-[#FF2E74]">
                 <span>More Robux More Happiness!</span>
                 <Heart className="w-3 h-3 fill-[#FF2E74]" />
@@ -185,9 +185,73 @@ export default function DashboardView({
       </div>
 
       {/* ═════════════════════════════════════════════════════════════════ */}
-      {/* 2. 3 Quick Action / Feature Cards (Clean Row Below Banner)        */}
+      {/* 2. 3 Quick Action Cards (Auto-Moving Marquee on Mobile)           */}
       {/* ═════════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+      
+      {/* Mobile View: Infinite Smooth Horizontal Marquee (Bergerak ke samping otomatis) */}
+      <div className="sm:hidden relative w-full overflow-hidden py-0.5 [mask-image:linear-gradient(to_right,transparent,black_4%,black_96%,transparent)]">
+        <div className="animate-marquee flex items-center gap-3">
+          {[
+            {
+              icon: CreditCard,
+              title: "Transaksi Cepat",
+              desc: "Pantau top up Robux secara real-time.",
+              iconBg: "bg-pink-50 border-pink-200/80 text-[#FF2E74]",
+            },
+            {
+              icon: Zap,
+              title: "Aktivasi Instan",
+              desc: "Proses pesanan otomatis dan cepat.",
+              iconBg: "bg-amber-50 border-amber-200/80 text-amber-600",
+            },
+            {
+              icon: ShoppingBag,
+              title: "Kelola Katalog",
+              desc: "Atur produk dan stok dengan mudah.",
+              iconBg: "bg-rose-50 border-rose-200/80 text-[#FF2E74]",
+            },
+            {
+              icon: CreditCard,
+              title: "Transaksi Cepat",
+              desc: "Pantau top up Robux secara real-time.",
+              iconBg: "bg-pink-50 border-pink-200/80 text-[#FF2E74]",
+            },
+            {
+              icon: Zap,
+              title: "Aktivasi Instan",
+              desc: "Proses pesanan otomatis dan cepat.",
+              iconBg: "bg-amber-50 border-amber-200/80 text-amber-600",
+            },
+            {
+              icon: ShoppingBag,
+              title: "Kelola Katalog",
+              desc: "Atur produk dan stok dengan mudah.",
+              iconBg: "bg-rose-50 border-rose-200/80 text-[#FF2E74]",
+            },
+          ].map((item, idx) => {
+            const Icon = item.icon;
+            return (
+              <div
+                key={idx}
+                className="flex-shrink-0 flex items-center gap-3.5 px-4 py-3.5 rounded-3xl bg-white/95 backdrop-blur-md border border-pink-100 shadow-[0_4px_18px_rgba(255,182,193,0.12)] min-w-[260px]"
+              >
+                <div className={`w-11 h-11 rounded-2xl border flex items-center justify-center flex-shrink-0 shadow-2xs ${item.iconBg}`}>
+                  <Icon className="w-5 h-5" />
+                </div>
+                <div className="flex flex-col whitespace-nowrap">
+                  <h4 className="text-xs font-black text-slate-900 leading-tight">{item.title}</h4>
+                  <p className="text-[11px] text-slate-500 font-medium leading-tight mt-0.5">
+                    {item.desc}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Desktop & Tablet View: Clean 3-Column Grid */}
+      <div className="hidden sm:grid sm:grid-cols-3 gap-3.5">
         {/* Card 1: Transaksi Cepat */}
         <div className="flex items-center gap-3.5 p-4 rounded-3xl bg-white/95 backdrop-blur-md border border-pink-100 shadow-[0_4px_18px_rgba(255,182,193,0.12)] hover:shadow-[0_6px_22px_rgba(255,182,193,0.2)] hover:-translate-y-0.5 transition-all duration-200">
           <div className="w-11 h-11 rounded-2xl bg-pink-50 border border-pink-200/80 flex items-center justify-center text-[#FF2E74] flex-shrink-0 shadow-2xs">
@@ -231,23 +295,23 @@ export default function DashboardView({
       {/* ═════════════════════════════════════════════════════════════════ */}
       {/* 3. 4 Metric Cards (Clean, No-Wrap, Equal Height)                  */}
       {/* ═════════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-4.5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4.5">
         
         {/* Metric 1: Total Omset */}
-        <div className="p-4.5 sm:p-5 rounded-3xl bg-white/95 backdrop-blur-md border border-pink-100 shadow-[0_6px_25px_rgba(255,182,193,0.14)] min-h-[135px] flex flex-col justify-between hover:-translate-y-1 transition-all duration-200">
+        <div className="p-3.5 sm:p-5 rounded-3xl bg-white/95 backdrop-blur-md border border-pink-100 shadow-[0_6px_25px_rgba(255,182,193,0.14)] min-h-[120px] sm:min-h-[135px] flex flex-col justify-between hover:-translate-y-1 transition-all duration-200">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
+            <span className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-wider">
               Total Omset
             </span>
-            <div className="w-8 h-8 rounded-full bg-pink-50 border border-pink-100 flex items-center justify-center text-[#FF2E74] flex-shrink-0">
-              <TrendingUp className="w-4 h-4" />
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-pink-50 border border-pink-100 flex items-center justify-center text-[#FF2E74] flex-shrink-0">
+              <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="flex flex-col mt-2">
-            <h3 className="text-base sm:text-lg lg:text-[1.4rem] font-black text-slate-900 tracking-tight whitespace-nowrap truncate" title={formattedOmset}>
+          <div className="flex flex-col mt-1.5 sm:mt-2">
+            <h3 className="text-sm sm:text-lg lg:text-[1.4rem] font-black text-slate-900 tracking-tight whitespace-nowrap truncate" title={formattedOmset}>
               {formattedOmset}
             </h3>
-            <span className="text-[11px] font-bold text-emerald-600 mt-1 flex items-center gap-1 whitespace-nowrap">
+            <span className="text-[10px] sm:text-[11px] font-bold text-emerald-600 mt-0.5 sm:mt-1 flex items-center gap-1 whitespace-nowrap">
               <span>↑</span> Transaksi sukses
             </span>
           </div>
@@ -256,68 +320,67 @@ export default function DashboardView({
         {/* Metric 2: Order Masuk */}
         <div
           onClick={onManageOrdersClick}
-          className="p-4.5 sm:p-5 rounded-3xl bg-white/95 backdrop-blur-md border border-pink-100 shadow-[0_6px_25px_rgba(255,182,193,0.14)] min-h-[135px] flex flex-col justify-between hover:-translate-y-1 hover:border-amber-200 transition-all duration-200 cursor-pointer group"
+          className="p-3.5 sm:p-5 rounded-3xl bg-white/95 backdrop-blur-md border border-pink-100 shadow-[0_6px_25px_rgba(255,182,193,0.14)] min-h-[120px] sm:min-h-[135px] flex flex-col justify-between hover:-translate-y-1 hover:border-amber-200 transition-all duration-200 cursor-pointer group"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
+            <span className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-wider">
               Order Masuk
             </span>
-            <div className="w-8 h-8 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 flex-shrink-0">
-              <Inbox className="w-4 h-4" />
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 flex-shrink-0">
+              <Inbox className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="flex flex-col mt-2">
-            <h3 className="text-2xl sm:text-3xl font-black text-amber-500 tracking-tight whitespace-nowrap">
+          <div className="flex flex-col mt-1.5 sm:mt-2">
+            <h3 className="text-xl sm:text-3xl font-black text-amber-500 tracking-tight whitespace-nowrap">
               {masukCount}
             </h3>
-            <span className="text-[11px] font-bold text-amber-600 mt-1 group-hover:underline flex items-center gap-0.5 whitespace-nowrap">
+            <span className="text-[10px] sm:text-[11px] font-bold text-amber-600 mt-0.5 sm:mt-1 group-hover:underline flex items-center gap-0.5 whitespace-nowrap">
               <span>Perlu diproses</span>
-              <ArrowRight className="w-3 h-3" />
+              <ArrowRight className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
             </span>
           </div>
         </div>
 
         {/* Metric 3: Sedang Diproses */}
-        <div className="p-4.5 sm:p-5 rounded-3xl bg-white/95 backdrop-blur-md border border-pink-100 shadow-[0_6px_25px_rgba(255,182,193,0.14)] min-h-[135px] flex flex-col justify-between hover:-translate-y-1 hover:border-blue-200 transition-all duration-200">
+        <div className="p-3.5 sm:p-5 rounded-3xl bg-white/95 backdrop-blur-md border border-pink-100 shadow-[0_6px_25px_rgba(255,182,193,0.14)] min-h-[120px] sm:min-h-[135px] flex flex-col justify-between hover:-translate-y-1 hover:border-blue-200 transition-all duration-200">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
+            <span className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-wider">
               Sedang Diproses
             </span>
-            <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 flex-shrink-0">
-              <Clock className="w-4 h-4" />
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 flex-shrink-0">
+              <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="flex flex-col mt-2">
-            <h3 className="text-2xl sm:text-3xl font-black text-blue-600 tracking-tight whitespace-nowrap">
+          <div className="flex flex-col mt-1.5 sm:mt-2">
+            <h3 className="text-xl sm:text-3xl font-black text-blue-600 tracking-tight whitespace-nowrap">
               {diprosesCount}
             </h3>
-            <span className="text-[11px] font-bold text-blue-600 mt-1 flex items-center gap-0.5 whitespace-nowrap">
-              <span>Dalam antrean gamepass</span>
-              <ArrowRight className="w-3 h-3" />
+            <span className="text-[10px] sm:text-[11px] font-bold text-blue-600 mt-0.5 sm:mt-1 flex items-center gap-0.5 whitespace-nowrap">
+              <span>Dalam antrean</span>
+              <ArrowRight className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
             </span>
           </div>
         </div>
 
         {/* Metric 4: Order Selesai */}
-        <div className="p-4.5 sm:p-5 rounded-3xl bg-white/95 backdrop-blur-md border border-pink-100 shadow-[0_6px_25px_rgba(255,182,193,0.14)] min-h-[135px] flex flex-col justify-between hover:-translate-y-1 hover:border-emerald-200 transition-all duration-200">
+        <div className="p-3.5 sm:p-5 rounded-3xl bg-white/95 backdrop-blur-md border border-pink-100 shadow-[0_6px_25px_rgba(255,182,193,0.14)] min-h-[120px] sm:min-h-[135px] flex flex-col justify-between hover:-translate-y-1 hover:border-emerald-200 transition-all duration-200">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
+            <span className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-wider">
               Order Selesai
             </span>
-            <div className="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-500 flex-shrink-0">
-              <CheckCircle2 className="w-4 h-4" />
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-500 flex-shrink-0">
+              <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="flex flex-col mt-2">
-            <h3 className="text-2xl sm:text-3xl font-black text-emerald-600 tracking-tight whitespace-nowrap">
+          <div className="flex flex-col mt-1.5 sm:mt-2">
+            <h3 className="text-xl sm:text-3xl font-black text-emerald-600 tracking-tight whitespace-nowrap">
               {selesaiCount}
             </h3>
-            <span className="text-[11px] font-bold text-slate-400 mt-1 whitespace-nowrap">
-              Dari {orders.length} total order
+            <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 mt-0.5 sm:mt-1 whitespace-nowrap truncate">
+              Dari {orders.length} order
             </span>
           </div>
         </div>
-
       </div>
 
       {/* ═════════════════════════════════════════════════════════════════ */}
@@ -370,7 +433,7 @@ export default function DashboardView({
                     #{order.id}
                   </span>
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 truncate">
-                    <span className="text-slate-900 font-bold">@{order.username}</span>
+                    <span className="text-slate-900 font-bold">@{cleanUsername(order.username)}</span>
                     <span>•</span>
                     <span>{order.robuxAmount.toLocaleString("id-ID")} Robux</span>
                   </div>
