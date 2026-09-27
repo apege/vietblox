@@ -6,8 +6,12 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import BrandLogo from "@/components/BrandLogo";
+import { useStoreSettings } from "@/hooks/useStoreSettings";
 
 export default function Footer() {
+  const { settings } = useStoreSettings();
+  const cleanWa = settings.whatsappNumber.replace(/[^0-9]/g, "") || "6281234567890";
+
   return (
     <footer className="relative bg-[#FFF0F5] text-slate-700 pt-12 pb-14 border-t border-pink-200/70 overflow-hidden">
       {/* Background Decorative Pink Clouds / Hearts */}
@@ -25,11 +29,10 @@ export default function Footer() {
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 sm:gap-2.5 group mb-2.5 sm:mb-3">
               <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl overflow-hidden shadow-xs group-hover:scale-105 transition-transform duration-300 border border-pink-200 bg-white">
-                <Image
-                  src="/logo_background.PNG"
-                  alt="VietBlox Mascot Logo"
-                  fill
-                  className="object-cover"
+                <img
+                  src={settings.logoImageUrl || "/logo_background.PNG"}
+                  alt={`${settings.storeName} Logo`}
+                  className="w-full h-full object-cover"
                 />
               </div>
               <div className="flex flex-col justify-center">
@@ -48,7 +51,7 @@ export default function Footer() {
 
             {/* Copyright */}
             <p className="text-[11px] font-semibold text-slate-400 mt-auto hidden md:block">
-              © {new Date().getFullYear()} VietBlox. Semua hak dilindungi.
+              © {new Date().getFullYear()} {settings.storeName}. Semua hak dilindungi.
             </p>
           </div>
 
@@ -62,6 +65,7 @@ export default function Footer() {
               <div className="flex flex-col gap-1.5 sm:gap-2 text-xs font-semibold text-slate-600">
                 <Link href="#beranda" className="hover:text-[#FF2E74] transition-colors">Beranda</Link>
                 <Link href="#pricelist" className="hover:text-[#FF2E74] transition-colors">Pricelist</Link>
+                <Link href="/tracking" className="hover:text-[#FF2E74] transition-colors text-[#FF2E74] font-bold">Lacak Pesanan</Link>
                 <Link href="#cara-order" className="hover:text-[#FF2E74] transition-colors">Cara Order</Link>
                 <Link href="#testimoni" className="hover:text-[#FF2E74] transition-colors">Testimoni</Link>
                 <Link href="#faq" className="hover:text-[#FF2E74] transition-colors">FAQ</Link>
@@ -77,16 +81,13 @@ export default function Footer() {
                 <Link href="#cara-order" className="hover:text-[#FF2E74] transition-colors">Cara Order</Link>
                 <Link href="#pricelist" className="hover:text-[#FF2E74] transition-colors">Metode Bayar</Link>
                 <a
-                  href="https://wa.me/6281234567890?text=Halo%20Admin%20VietBlox"
+                  href={`https://wa.me/${cleanWa}?text=Halo%20Admin%20${encodeURIComponent(settings.storeName)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-[#FF2E74] transition-colors"
                 >
                   Hubungi Kami
                 </a>
-                <Link href="/admin" className="text-[#FF2E74] hover:underline font-bold transition-colors">
-                  Panel Admin ↗
-                </Link>
               </div>
             </div>
           </div>
@@ -129,7 +130,7 @@ export default function Footer() {
 
               {/* WhatsApp */}
               <a
-                href="https://wa.me/6281234567890"
+                href={`https://wa.me/${cleanWa}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 hover:text-[#FF2E74] transition-colors group p-1 sm:p-0"
