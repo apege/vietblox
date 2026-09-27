@@ -9,11 +9,8 @@ import WhyVietnamSection from "@/components/WhyVietnamSection";
 import FAQSection from "@/components/FAQSection";
 import Footer from "@/components/Footer";
 import HowToOrderModal from "@/components/HowToOrderModal";
-import ContactAdminModal from "@/components/ContactAdminModal";
-
 export default function Home() {
   const [isHowToOrderOpen, setIsHowToOrderOpen] = useState(false);
-  const [isContactAdminOpen, setIsContactAdminOpen] = useState(false);
 
   const scrollToTopUp = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -37,8 +34,8 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col bg-[#FFF5F8] text-[#1E293B]">
-      {/* Navbar with logo_background.PNG and Hubungi Admin */}
-      <Navbar onContactClick={() => setIsContactAdminOpen(true)} />
+      {/* Navbar with dynamic logo and Direct WhatsApp link */}
+      <Navbar />
 
       {/* Hero Banner with Generated Background, Mascot Character, Badges, Quick Top-Up & 4 Benefits */}
       <HeroBanner
@@ -65,11 +62,6 @@ export default function Home() {
       <HowToOrderModal
         isOpen={isHowToOrderOpen}
         onClose={() => setIsHowToOrderOpen(false)}
-      />
-
-      <ContactAdminModal
-        isOpen={isContactAdminOpen}
-        onClose={() => setIsContactAdminOpen(false)}
       />
     </main>
   );
