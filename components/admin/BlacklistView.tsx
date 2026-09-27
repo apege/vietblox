@@ -13,6 +13,7 @@ import {
   ExternalLink,
   Ban,
 } from "lucide-react";
+import { cleanUsername } from "@/lib/adminStore";
 
 export interface BlacklistItem {
   id: string;
@@ -39,17 +40,42 @@ export default function BlacklistView() {
   const [formRobloxId, setFormRobloxId] = useState("");
   const [formReason, setFormReason] = useState("Indikasi penipuan atau penyalahgunaan");
 
-  useEffect(() => {
+  const loadBlacklist = async () => {
+    try {
+      const res = await fetch("/api/blacklist");
+      const data = await res.json();
+      if (data.success && Array.isArray(data.blacklists)) {
+        const mapped: BlacklistItem[] = data.blacklists.map((row: any) => ({
+          id: row.id.toString(),
+          username: row.roblox_username,
+          phone: row.phone || undefined,
+          robloxUserId: row.roblox_user_id || undefined,
+          reason: row.reason || "Indikasi penipuan atau penyalahgunaan",
+          createdAt: row.created_at
+            ? `${new Date(row.created_at).getDate()} ${new Date(row.created_at).toLocaleString("id-ID", { month: "short" })} ${new Date(row.created_at).getFullYear()}`
+            : "Baru saja",
+        }));
+        setBlacklist(mapped);
+        localStorage.setItem(STORAGE_KEY_BLACKLIST, JSON.stringify(mapped));
+        const usernames = mapped.map((i) => i.username.toLowerCase());
+        localStorage.setItem("vietblox_blacklisted_users_v1", JSON.stringify(usernames));
+        return;
+      }
+    } catch (e) {
+      console.warn("Failed to fetch blacklist from API:", e);
+    }
+
     try {
       const saved = localStorage.getItem(STORAGE_KEY_BLACKLIST);
-      if (saved) {
-        setBlacklist(JSON.parse(saved));
-      } else {
-        setBlacklist(initialBlacklist);
-      }
+      if (saved) setBlacklist(JSON.parse(saved));
+      else setBlacklist([]);
     } catch {
-      setBlacklist(initialBlacklist);
+      setBlacklist([]);
     }
+  };
+
+  useEffect(() => {
+    loadBlacklist();
   }, []);
 
   const saveBlacklist = (items: BlacklistItem[]) => {
@@ -64,13 +90,10 @@ export default function BlacklistView() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_BLACKLIST);
-      if (saved) setBlacklist(JSON.parse(saved));
-    } catch {}
-    setTimeout(() => setIsRefreshing(false), 500);
+    await loadBlacklist();
+    setIsRefreshing(false);
   };
 
   const openAddModal = () => {
@@ -81,7 +104,7 @@ export default function BlacklistView() {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formUsername.trim() || !formReason.trim()) return;
 
@@ -99,11 +122,41 @@ export default function BlacklistView() {
     const updated = [newItem, ...blacklist.filter((b) => b.username.toLowerCase() !== cleanUsername.toLowerCase())];
     saveBlacklist(updated);
     setIsModalOpen(false);
+
+    try {
+      const res = await fetch("/api/blacklist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          robloxUsername: cleanUsername,
+          robloxUserId: formRobloxId.trim() || null,
+          phone: formPhone.trim() || null,
+          reason: formReason.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.item) {
+        setBlacklist((prev) =>
+          prev.map((b) => (b.id === newItem.id ? { ...b, id: data.item.id.toString() } : b))
+        );
+      }
+    } catch (err) {
+      console.error("Failed to add to blacklist on server:", err);
+    }
   };
 
-  const handleUnblock = (id: string) => {
+  const handleUnblock = async (id: string) => {
+    const item = blacklist.find((b) => b.id === id);
     const updated = blacklist.filter((b) => b.id !== id);
     saveBlacklist(updated);
+
+    try {
+      await fetch(`/api/blacklist?id=${encodeURIComponent(id)}${item ? `&username=${encodeURIComponent(item.username)}` : ""}`, {
+        method: "DELETE",
+      });
+    } catch (err) {
+      console.error("Failed to unblock on server:", err);
+    }
   };
 
   const filtered = blacklist.filter((item) => {
@@ -195,7 +248,7 @@ export default function BlacklistView() {
               <div className="flex flex-col gap-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-base sm:text-lg font-black text-rose-600 tracking-tight">
-                    @{item.username}
+                    @{cleanUsername(item.username)}
                   </span>
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[10px] font-black uppercase">
                     <Ban className="w-3 h-3" />
@@ -232,7 +285,7 @@ export default function BlacklistView() {
       {/* ─── 4. Modal Tambah ke Blacklist (Matching Screenshot 2) ─── */}
       {isModalOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
           onClick={(e) => e.target === e.currentTarget && setIsModalOpen(false)}
         >
           <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-pink-100 flex flex-col gap-5 animate-in zoom-in-95 duration-200">
