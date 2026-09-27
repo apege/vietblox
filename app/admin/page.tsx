@@ -32,15 +32,34 @@ export default function AdminPage() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Load from storage on mount
+  // Load from Neon API on mount
   useEffect(() => {
-    const loadedOrders = getStoredOrders();
-    const loadedPackages = getStoredPackages();
-    setOrders(loadedOrders);
-    setPackages(loadedPackages);
-    if (loadedOrders.length > 0) {
-      setSelectedOrder(loadedOrders[0]);
-    }
+    const loadInitialData = async () => {
+      try {
+        // 1. Fetch Orders from Neon
+        const ordersRes = await fetch("/api/orders");
+        const ordersData = await ordersRes.json();
+        if (ordersData.success) {
+          const fetchedOrders = ordersData.orders || [];
+          setOrders(fetchedOrders);
+          setSelectedOrder(fetchedOrders.length > 0 ? fetchedOrders[0] : null);
+          saveStoredOrders(fetchedOrders);
+        }
+
+        // 2. Fetch Products from Neon
+        const pkgsRes = await fetch("/api/products?all=true");
+        const pkgsData = await pkgsRes.json();
+        if (pkgsData.success) {
+          const fetchedPkgs = pkgsData.products || [];
+          setPackages(fetchedPkgs);
+          saveStoredPackages(fetchedPkgs);
+        }
+      } catch (err) {
+        console.warn("Neon live fetch failed:", err);
+      }
+    };
+
+    loadInitialData();
   }, []);
 
   const showToast = (msg: string) => {
@@ -52,8 +71,8 @@ export default function AdminPage() {
   const orderMasukCount = orders.filter((o) => o.status === "masuk").length;
   const orderDiprosesCount = orders.filter((o) => o.status === "diproses").length;
 
-  // Handle status changes
-  const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
+  // Handle status changes (live PATCH to Neon)
+  const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
     const statusLabels: Record<OrderStatus, string> = {
       masuk: "Menunggu Bayar",
       diproses: "Sedang Diproses",
@@ -82,11 +101,24 @@ export default function AdminPage() {
       });
     }
 
+    try {
+      await fetch("/api/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderCode: orderId,
+          status: newStatus,
+        }),
+      });
+    } catch (e) {
+      console.error("Failed to update status on Neon:", e);
+    }
+
     showToast(`Status order #${orderId} diubah menjadi: ${statusLabels[newStatus]}`);
   };
 
-  // Handle admin notes save
-  const handleSaveAdminNotes = (orderId: string, notes: string) => {
+  // Handle admin notes save (live PATCH to Neon)
+  const handleSaveAdminNotes = async (orderId: string, notes: string) => {
     const updated = orders.map((o) =>
       o.id === orderId ? { ...o, adminNotes: notes } : o
     );
@@ -96,13 +128,38 @@ export default function AdminPage() {
     if (selectedOrder && selectedOrder.id === orderId) {
       setSelectedOrder({ ...selectedOrder, adminNotes: notes });
     }
+
+    try {
+      await fetch("/api/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderCode: orderId,
+          adminNotes: notes,
+        }),
+      });
+    } catch (e) {
+      console.error("Failed to update admin notes on Neon:", e);
+    }
+
     showToast(`Catatan admin untuk #${orderId} berhasil disimpan!`);
   };
 
   // Handle packages save
-  const handleSavePackages = (pkgs: RobuxPackage[]) => {
+  const handleSavePackages = async (pkgs: RobuxPackage[]) => {
     setPackages(pkgs);
     saveStoredPackages(pkgs);
+    
+    try {
+      await fetch("/api/products", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ packages: pkgs }),
+      });
+    } catch (err) {
+      console.error("Failed to sync packages to DB:", err);
+    }
+
     showToast("Pricelist Robux berhasil diperbarui!");
   };
 
@@ -112,28 +169,32 @@ export default function AdminPage() {
     setActiveView("order-detail");
   };
 
-  // Refresh data
-  const handleRefreshData = () => {
+  // Handle new manual order created
+  const handleOrderCreated = (newOrder: OrderItem) => {
+    setOrders((prev) => [newOrder, ...prev]);
+    saveStoredOrders([newOrder, ...orders]);
+    setSelectedOrder(newOrder);
+    showToast(`Pesanan #${newOrder.id} untuk @${newOrder.username} berhasil dibuat!`);
+  };
+
+  // Refresh data from Neon
+  const handleRefreshData = async () => {
+    try {
+      const ordersRes = await fetch("/api/orders");
+      const ordersData = await ordersRes.json();
+      if (ordersData.success && ordersData.orders) {
+        setOrders(ordersData.orders);
+        showToast("Data pesanan berhasil disinkronkan dari database!");
+        return;
+      }
+    } catch {}
     const loaded = getStoredOrders();
     setOrders(loaded);
     showToast("Data pesanan berhasil diperbarui!");
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF5F8] text-[#1E293B] relative isolate">
-      
-      {/* Ambient Top City Background Glow */}
-      <div className="absolute top-0 right-0 left-0 h-96 pointer-events-none z-0 overflow-hidden opacity-30 lg:left-64">
-        <div className="relative w-full h-full">
-          <img
-            src="/banner_background.jpg"
-            alt="Ambient Banner Background"
-            className="w-full h-full object-cover object-top filter blur-xs"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#FFF5F8]/80 to-[#FFF5F8]" />
-        </div>
-      </div>
-
+    <div className="min-h-screen bg-[#FFF5F8] text-[#1E293B] relative">
       {/* 1. Sidebar */}
       <AdminSidebar
         activeView={activeView}
@@ -149,7 +210,7 @@ export default function AdminPage() {
       />
 
       {/* 2. Main Content Area */}
-      <div className="flex-1 lg:pl-64 flex flex-col min-w-0 relative z-10 min-h-screen">
+      <div className="flex-1 lg:pl-64 flex flex-col min-w-0 min-h-screen">
         
         {/* Top Header */}
         <AdminHeader
@@ -160,7 +221,7 @@ export default function AdminPage() {
         />
 
         {/* Dynamic Page Views */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto relative z-10">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
           
           {/* Dashboard View */}
           {activeView === "dashboard" && (
@@ -180,6 +241,7 @@ export default function AdminPage() {
               onSelectOrder={handleSelectOrder}
               onQuickProcess={(order) => handleStatusChange(order.id, "diproses")}
               onRefreshData={handleRefreshData}
+              onOrderCreated={handleOrderCreated}
             />
           )}
 
@@ -191,6 +253,7 @@ export default function AdminPage() {
               onSelectOrder={handleSelectOrder}
               onQuickProcess={(order) => handleStatusChange(order.id, "selesai")}
               onRefreshData={handleRefreshData}
+              onOrderCreated={handleOrderCreated}
             />
           )}
 
@@ -202,6 +265,7 @@ export default function AdminPage() {
               onSelectOrder={handleSelectOrder}
               onQuickProcess={(order) => handleStatusChange(order.id, "diproses")}
               onRefreshData={handleRefreshData}
+              onOrderCreated={handleOrderCreated}
             />
           )}
 
@@ -213,6 +277,7 @@ export default function AdminPage() {
               onSelectOrder={handleSelectOrder}
               onQuickProcess={(order) => handleStatusChange(order.id, "masuk")}
               onRefreshData={handleRefreshData}
+              onOrderCreated={handleOrderCreated}
             />
           )}
 
