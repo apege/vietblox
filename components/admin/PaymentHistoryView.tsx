@@ -9,7 +9,7 @@ import {
   MessageCircle,
   TrendingUp,
 } from "lucide-react";
-import { OrderItem } from "@/lib/adminStore";
+import { OrderItem, cleanUsername } from "@/lib/adminStore";
 
 interface PaymentHistoryViewProps {
   orders: OrderItem[];
@@ -355,7 +355,7 @@ export default function PaymentHistoryView({
                     </span>
 
                     <span className="font-black text-[#FF2E74] text-xs">
-                      @{item.username}
+                      @{cleanUsername(item.username)}
                     </span>
 
                     <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-600 text-[10px] font-black border border-emerald-200">
