@@ -6,32 +6,32 @@ import Link from "next/link";
 import { MessageCircle, Menu, X } from "lucide-react";
 
 import BrandLogo from "@/components/BrandLogo";
+import { useStoreSettings } from "@/hooks/useStoreSettings";
 
 interface NavbarProps {
   onContactClick?: () => void;
 }
 
 export default function Navbar({ onContactClick }: NavbarProps) {
+  const { settings } = useStoreSettings();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeNav, setActiveNav] = useState("Beranda");
 
   const navLinks = [
     { name: "Beranda", href: "#beranda" },
     { name: "Pricelist", href: "#pricelist" },
+    { name: "Lacak Pesanan", href: "/tracking" },
     { name: "Cara Order", href: "#cara-order" },
     { name: "Testimoni", href: "#testimoni" },
     { name: "FAQ", href: "#faq" },
   ];
 
   const handleAdminContact = () => {
-    if (onContactClick) {
-      onContactClick();
-    } else {
-      window.open(
-        "https://wa.me/6281234567890?text=Halo%20Admin%20VietBlox,%20saya%20mau%20tanya%20seputar%20Top%20Up%20Robux",
-        "_blank"
-      );
-    }
+    const cleanWa = settings.whatsappNumber.replace(/[^0-9]/g, "") || "6281234567890";
+    window.open(
+      `https://wa.me/${cleanWa}?text=Halo%20Admin%20${encodeURIComponent(settings.storeName)},%20saya%20mau%20tanya%20seputar%20Top%20Up%20Robux`,
+      "_blank"
+    );
   };
 
   return (
@@ -41,12 +41,10 @@ export default function Navbar({ onContactClick }: NavbarProps) {
           {/* Brand Logo */}
           <Link href="/" className="flex items-center gap-2 sm:gap-2.5 group min-w-0">
             <div className="relative w-9 h-9 sm:w-11 sm:h-11 rounded-xl overflow-hidden shadow-xs group-hover:scale-105 transition-transform duration-300 border border-pink-200 bg-white flex-shrink-0">
-              <Image
-                src="/logo_background.PNG"
-                alt="VietBlox Mascot Logo"
-                fill
-                className="object-cover"
-                priority
+              <img
+                src={settings.logoImageUrl || "/logo_background.PNG"}
+                alt={`${settings.storeName} Logo`}
+                className="w-full h-full object-cover"
               />
             </div>
             <div className="flex flex-col justify-center min-w-0">
