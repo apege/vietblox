@@ -77,8 +77,8 @@ export default function AdminSidebar({
       {/* ─── 1. Pinned Logo Header (Always Visible at Top) ─── */}
       <div className="px-4 py-4 border-b border-pink-100/80 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="relative w-11 h-11 rounded-2xl overflow-hidden shadow-xs border-2 border-pink-200 bg-white flex-shrink-0 group-hover:scale-105 transition-transform">
+          <Link href="/" className="flex items-center gap-2.5 group min-w-0">
+            <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-2xl overflow-hidden shadow-xs border-2 border-pink-200 bg-white flex-shrink-0 group-hover:scale-105 transition-transform">
               <Image
                 src="/logo_background.PNG"
                 alt="VietBlox Mascot"
@@ -87,8 +87,11 @@ export default function AdminSidebar({
                 priority
               />
             </div>
-            <div className="flex flex-col justify-center">
-              <BrandLogo size="lg" className="group-hover:scale-105 transition-transform origin-left" />
+            <div className="flex flex-col justify-center min-w-0">
+              <BrandLogo size="md" className="group-hover:scale-105 transition-transform origin-left" />
+              <span className="text-[10px] font-black text-[#FF2E74] tracking-wider uppercase -mt-0.5">
+                Admin Panel
+              </span>
             </div>
           </Link>
 
