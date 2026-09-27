@@ -13,6 +13,7 @@ import TestimoniManagementView from "@/components/admin/TestimoniManagementView"
 import PaymentHistoryView from "@/components/admin/PaymentHistoryView";
 import StoreSettingsView from "@/components/admin/StoreSettingsView";
 import LogoutModal from "@/components/admin/LogoutModal";
+import AdminLoginView from "@/components/admin/AdminLoginView";
 import {
   OrderItem,
   OrderStatus,
@@ -24,6 +25,7 @@ import {
 } from "@/lib/adminStore";
 
 export default function AdminPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [packages, setPackages] = useState<RobuxPackage[]>([]);
   const [activeView, setActiveView] = useState<AdminViewType>("dashboard");
@@ -32,8 +34,25 @@ export default function AdminPage() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Load from Neon API on mount
+  // Check auth session on mount
   useEffect(() => {
+    try {
+      const localToken = localStorage.getItem("vietblox_admin_token");
+      const sessionToken = sessionStorage.getItem("vietblox_admin_token");
+      if (localToken || sessionToken) {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+      }
+    } catch {
+      setIsAuthenticated(false);
+    }
+  }, []);
+
+  // Load from Neon API on mount if authenticated
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
     const loadInitialData = async () => {
       try {
         // 1. Fetch Orders from Neon
@@ -60,12 +79,43 @@ export default function AdminPage() {
     };
 
     loadInitialData();
-  }, []);
+  }, [isAuthenticated]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 2500);
   };
+
+  const handleLogout = () => {
+    try {
+      localStorage.removeItem("vietblox_admin_token");
+      sessionStorage.removeItem("vietblox_admin_token");
+    } catch {}
+    setIsAuthenticated(false);
+    setIsLogoutModalOpen(false);
+    showToast("Berhasil logout dari Panel Admin");
+  };
+
+  // Auth checking loading state
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen bg-[#FFF5F8] flex items-center justify-center">
+        <div className="w-8 h-8 border-3 border-pink-200 border-t-[#FF2E74] rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // If not authenticated, render Login View
+  if (isAuthenticated === false) {
+    return (
+      <AdminLoginView
+        onLoginSuccess={(token) => {
+          setIsAuthenticated(true);
+          showToast("Selamat datang kembali di Admin Panel VietBlox!");
+        }}
+      />
+    );
+  }
 
   // Order Counts
   const orderMasukCount = orders.filter((o) => o.status === "masuk").length;
@@ -340,9 +390,7 @@ export default function AdminPage() {
       <LogoutModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
-        onConfirm={() => {
-          setIsLogoutModalOpen(false);
-        }}
+        onConfirm={handleLogout}
       />
 
       {/* Floating Toast Notification */}
