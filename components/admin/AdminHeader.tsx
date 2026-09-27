@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { Search, LogOut, Menu, X, ArrowRight } from "lucide-react";
-import { OrderItem } from "@/lib/adminStore";
+import { OrderItem, cleanUsername } from "@/lib/adminStore";
 
 interface AdminHeaderProps {
   onOpenMobileMenu: () => void;
@@ -52,23 +52,15 @@ export default function AdminHeader({
     <header className="sticky top-0 z-20 w-full bg-white/95 backdrop-blur-md border-b border-pink-100/80 px-4 sm:px-6 lg:px-8 py-3 transition-all">
       <div className="flex items-center justify-between gap-3 sm:gap-6">
         
-        {/* Left Mobile Menu Toggle + Logo (Mobile only) */}
-        <div className="flex items-center gap-2.5 lg:hidden">
+        {/* Left Mobile Menu Toggle (Mobile only) */}
+        <div className="flex items-center lg:hidden flex-shrink-0">
           <button
             onClick={onOpenMobileMenu}
-            className="w-9 h-9 rounded-xl bg-pink-50 border border-pink-100 flex items-center justify-center text-slate-700 hover:bg-pink-100 active:scale-95 transition-all"
+            className="w-9 h-9 rounded-xl bg-pink-50 border border-pink-100 flex items-center justify-center text-slate-700 hover:bg-pink-100 active:scale-95 transition-all cursor-pointer"
             aria-label="Open navigation"
           >
             <Menu className="w-5 h-5 text-[#FF2E74]" />
           </button>
-          <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-pink-200 bg-white">
-            <Image
-              src="/logo_background.PNG"
-              alt="VietBlox Mascot"
-              fill
-              className="object-cover"
-            />
-          </div>
         </div>
 
         {/* Global Search Bar (Matching Layout) */}
@@ -127,7 +119,7 @@ export default function AdminHeader({
                         <div className="flex flex-col">
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs font-black text-[#FF2E74]">#{order.id}</span>
-                            <span className="text-xs font-bold text-slate-800">@{order.username}</span>
+                            <span className="text-xs font-bold text-slate-800">@{cleanUsername(order.username)}</span>
                           </div>
                           <span className="text-[10px] text-slate-400 font-medium">
                             {order.robuxAmount.toLocaleString("id-ID")} Robux · {order.date}
