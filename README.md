@@ -35,7 +35,8 @@
 - **Instant Activation Link:** Tombol satu-klik untuk membuka Link Aktivasi Gamepass / ID 97K yang diatur oleh Admin.
 - **Beri Ulasan Pasca Pesanan:** Pelanggan yang pesanannya telah selesai dapat langsung memberikan rating bintang dan testimoni.
 
-### 👑 3. Dashboard Admin Terpadu (`/admin`)
+### 👑 3. Dashboard Admin Terpadu & Keamanan (`/admin`)
+- **Admin Authentication Gate:** Halaman login terlindungi dengan PIN / Password admin, fitur "Ingat Saya", dan enkripsi sesi. (Password default: `admin123` dan dapat diubah langsung di Pengaturan Toko).
 - **Manajemen Transaksi:**
   - Filter pesanan berdasarkan status (*Semua*, *Menunggu Bayar*, *Diproses*, *Selesai*, *Dibatalkan*).
   - Update status pesanan, input catatan admin, dan set link aktivasi pesanan.
@@ -142,6 +143,11 @@ Buat file `.env.local` di root direktori project:
 ```env
 # Neon Serverless Postgres Connection String (Gunakan link -pooler)
 DATABASE_URL="postgres://user:password@ep-sample-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+
+# Kredensial Autentikasi Panel Admin
+ADMIN_USERNAME="admin_vietblox"
+ADMIN_PASSWORD="@Vietblox2026"
+ADMIN_SESSION_SECRET="vietblox_super_secret_admin_session_key_2026"
 ```
 
 ### 4. Jalankan Development Server
@@ -167,6 +173,9 @@ npm run start
    - **Output Directory:** `.vercel/output/static` (atau sesuai konfigurasi adapter)
 3. Tambahkan Environment Variable di **Settings > Environment Variables**:
    - `DATABASE_URL` = `postgres://...-pooler.region.neon.tech/neondb?sslmode=require`
+   - `ADMIN_USERNAME` = `admin_vietblox` (sesuaikan username admin kamu)
+   - `ADMIN_PASSWORD` = `@Vietblox2026` (sesuaikan password admin kamu)
+   - `ADMIN_SESSION_SECRET` = `vietblox_super_secret_admin_session_key_2026`
    - `NODE_VERSION` = `20`
 4. Klik **Save and Deploy**.
 
