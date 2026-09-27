@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import {
   Plus,
@@ -10,10 +10,12 @@ import {
   Check,
   Zap,
   Crown,
+  Flame,
   AlertCircle,
   Package,
+  Info,
 } from "lucide-react";
-import { RobuxPackage, PackageStatus } from "@/lib/adminStore";
+import { RobuxPackage, PackageStatus, getComputedPackageBadge, DynamicBadgeType } from "@/lib/adminStore";
 
 interface PricelistManagementViewProps {
   packages: RobuxPackage[];
@@ -28,16 +30,21 @@ export default function PricelistManagementView({
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingPackage, setEditingPackage] = useState<RobuxPackage | null>(null);
 
-  // Form states for Add / Edit
+  // Synchronize internal state when parent packages update
+  useEffect(() => {
+    if (packages && packages.length > 0) {
+      setPkgList(packages);
+    }
+  }, [packages]);
+
+  // Form states for Add / Edit (Badge is computed automatically)
   const [formAmount, setFormAmount] = useState<number>(1800);
   const [formPrice, setFormPrice] = useState<string>("Rp 35.000");
-  const [formBadge, setFormBadge] = useState<"PROMO" | "SULTAN" | "HOT" | "BEST SELLER" | "NONE">("NONE");
   const [formStatus, setFormStatus] = useState<PackageStatus>("active");
 
   const openAddModal = () => {
     setFormAmount(2000);
     setFormPrice("Rp 40.000");
-    setFormBadge("NONE");
     setFormStatus("active");
     setEditingPackage(null);
     setIsAddModalOpen(true);
@@ -47,7 +54,6 @@ export default function PricelistManagementView({
     setEditingPackage(pkg);
     setFormAmount(pkg.amount);
     setFormPrice(pkg.price);
-    setFormBadge(pkg.badge || "NONE");
     setFormStatus(pkg.status || (pkg.inStock ? "active" : "sold_out"));
     setIsAddModalOpen(true);
   };
@@ -57,7 +63,6 @@ export default function PricelistManagementView({
     if (!formAmount || !formPrice.trim()) return;
 
     const numericPrice = parseInt(formPrice.replace(/[^0-9]/g, "")) || 0;
-    const badgeValue = formBadge === "NONE" ? null : formBadge;
     const inStock = formStatus === "active";
 
     if (editingPackage) {
@@ -69,7 +74,6 @@ export default function PricelistManagementView({
               amount: formAmount,
               price: formPrice.trim(),
               numericPrice,
-              badge: badgeValue,
               status: formStatus,
               inStock,
             }
@@ -84,7 +88,6 @@ export default function PricelistManagementView({
         amount: formAmount,
         price: formPrice.trim(),
         numericPrice,
-        badge: badgeValue,
         status: formStatus,
         inStock,
       };
@@ -104,20 +107,19 @@ export default function PricelistManagementView({
     }
   };
 
-  // Quick cycle status toggle: active -> sold_out -> inactive -> active
+  // Direct toggle between Active <-> Sold Out
   const handleToggleStatus = (pkg: RobuxPackage) => {
-    const nextStatus: Record<PackageStatus, PackageStatus> = {
-      active: "sold_out",
-      sold_out: "inactive",
-      inactive: "active",
-    };
-    const newStatus = nextStatus[pkg.status || (pkg.inStock ? "active" : "sold_out")];
+    const current = pkg.status || (pkg.inStock ? "active" : "sold_out");
+    // If active -> turn to sold_out. If sold_out or inactive -> turn to active
+    const newStatus: PackageStatus = current === "active" ? "sold_out" : "active";
+    const inStock = newStatus === "active";
+
     const updated = pkgList.map((p) =>
-      p.id === pkg.id
+      p.id === pkg.id || p.amount === pkg.amount
         ? {
             ...p,
             status: newStatus,
-            inStock: newStatus === "active",
+            inStock,
           }
         : p
     );
@@ -128,7 +130,7 @@ export default function PricelistManagementView({
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
       
-      {/* ─── 1. Header (Matching Screenshot) ─── */}
+      {/* ─── 1. Header ─── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
@@ -149,17 +151,18 @@ export default function PricelistManagementView({
         </button>
       </div>
 
-      {/* ─── 2. 3-Column Grid Cards (Matching Screenshot) ─── */}
+      {/* ─── 2. 3-Column Grid Cards ─── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {pkgList.map((pkg) => {
           const currentStatus: PackageStatus = pkg.status || (pkg.inStock ? "active" : "sold_out");
+          const computedBadge: DynamicBadgeType = getComputedPackageBadge(pkg);
 
           return (
             <div
-              key={pkg.id}
+              key={pkg.id || pkg.amount}
               className={`p-5 sm:p-6 rounded-3xl bg-white/95 backdrop-blur-md border transition-all duration-200 flex flex-col justify-between gap-4 shadow-[0_4px_20px_rgba(255,182,193,0.12)] hover:shadow-[0_8px_30px_rgba(255,182,193,0.22)] ${
                 currentStatus === "sold_out"
-                  ? "border-rose-200/90 bg-rose-50/20"
+                  ? "border-rose-300/80 bg-rose-50/30"
                   : currentStatus === "inactive"
                   ? "border-slate-200 opacity-70"
                   : "border-pink-100 hover:border-pink-200"
@@ -187,24 +190,31 @@ export default function PricelistManagementView({
                       {pkg.amount.toLocaleString("id-ID")} Robux
                     </h3>
 
-                    {/* Tag / Badge */}
-                    {pkg.badge && (
+                    {/* Dynamic Computed Badge */}
+                    {computedBadge && (
                       <div className="flex items-center">
-                        {pkg.badge === "PROMO" && (
+                        {computedBadge === "SOLDOUT" && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-100 text-rose-700 text-[9px] font-black uppercase tracking-wider">
+                            <AlertCircle className="w-2.5 h-2.5 text-rose-600" />
+                            <span>SOLD OUT</span>
+                          </span>
+                        )}
+                        {computedBadge === "PROMO" && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-pink-100 text-[#FF2E74] text-[9px] font-black uppercase tracking-wider">
                             <Zap className="w-2.5 h-2.5 fill-[#FF2E74]" />
                             <span>PROMO</span>
                           </span>
                         )}
-                        {pkg.badge === "SULTAN" && (
+                        {computedBadge === "SULTAN" && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[9px] font-black uppercase tracking-wider">
                             <Crown className="w-2.5 h-2.5 fill-amber-700" />
                             <span>SULTAN</span>
                           </span>
                         )}
-                        {pkg.badge !== "PROMO" && pkg.badge !== "SULTAN" && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-pink-50 text-[#FF2E74] text-[9px] font-black uppercase border border-pink-200">
-                            {pkg.badge}
+                        {computedBadge === "POPULER" && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-100 text-orange-700 text-[9px] font-black uppercase tracking-wider">
+                            <Flame className="w-2.5 h-2.5 fill-orange-500 text-orange-500" />
+                            <span>POPULER</span>
                           </span>
                         )}
                       </div>
@@ -225,7 +235,7 @@ export default function PricelistManagementView({
                     </span>
                   )}
                   {currentStatus === "sold_out" && (
-                    <span className="px-3 py-1 rounded-full bg-rose-50 text-rose-600 border border-rose-200/90 text-xs font-black shadow-2xs animate-pulse">
+                    <span className="px-3 py-1 rounded-full bg-rose-50 text-rose-600 border border-rose-300 text-xs font-black shadow-2xs">
                       Sold Out
                     </span>
                   )}
@@ -241,19 +251,40 @@ export default function PricelistManagementView({
               {/* Bottom Row: Quick Status Action + Edit / Delete Buttons */}
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
                 
-                {/* Left: Quick Status Changer Link/Button */}
+                {/* Left: Quick Status Changer Toggle Button */}
                 <button
                   onClick={() => handleToggleStatus(pkg)}
-                  className="text-xs font-bold text-slate-500 hover:text-[#FF2E74] transition-colors cursor-pointer flex items-center gap-1 group"
-                  title="Klik untuk mengubah status: Aktif → Sold Out → Nonaktif"
+                  className={`text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-xl border ${
+                    currentStatus === "sold_out"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 font-black shadow-xs"
+                      : currentStatus === "inactive"
+                      ? "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200"
+                      : "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 font-extrabold"
+                  }`}
+                  title={
+                    currentStatus === "sold_out"
+                      ? "Klik untuk membuka stok kembali (Jadikan Aktif)"
+                      : "Klik untuk menutup stok (Jadikan Sold Out)"
+                  }
                 >
-                  <span className="group-hover:underline">
-                    {currentStatus === "active"
-                      ? "Set Sold Out"
-                      : currentStatus === "sold_out"
-                      ? "Nonaktifkan"
-                      : "Aktifkan"}
-                  </span>
+                  {currentStatus === "active" && (
+                    <>
+                      <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
+                      <span>Set Sold Out</span>
+                    </>
+                  )}
+                  {currentStatus === "sold_out" && (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Set Tersedia (Aktifkan)</span>
+                    </>
+                  )}
+                  {currentStatus === "inactive" && (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-slate-600" />
+                      <span>Aktifkan Paket</span>
+                    </>
+                  )}
                 </button>
 
                 {/* Right: Edit & Delete Buttons */}
@@ -287,7 +318,7 @@ export default function PricelistManagementView({
       {/* ─── 3. Modal Tambah / Edit Nominal Baru ─── */}
       {isAddModalOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
           onClick={(e) => e.target === e.currentTarget && setIsAddModalOpen(false)}
         >
           <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-pink-100 flex flex-col gap-5 animate-in zoom-in-95 duration-200">
@@ -351,20 +382,18 @@ export default function PricelistManagementView({
                 />
               </div>
 
-              {/* Tag / Badge Promo */}
-              <div className="flex flex-col gap-1.5">
-                <label className="font-extrabold text-slate-800">Tag / Badge Khusus</label>
-                <select
-                  value={formBadge}
-                  onChange={(e) => setFormBadge(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#FF2E74] focus:ring-2 focus:ring-pink-100 outline-none font-bold text-slate-900 bg-white"
-                >
-                  <option value="NONE">Tanpa Tag</option>
-                  <option value="PROMO">⚡ PROMO</option>
-                  <option value="SULTAN">👑 SULTAN</option>
-                  <option value="HOT">🔥 HOT</option>
-                  <option value="BEST SELLER">⭐ BEST SELLER</option>
-                </select>
+              {/* Info: Aturan Badge Otomatis */}
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-pink-50/80 to-purple-50/50 border border-pink-200/70 flex items-start gap-2.5 text-xs text-slate-600 shadow-2xs">
+                <Info className="w-4 h-4 text-[#FF2E74] shrink-0 mt-0.5" />
+                <div className="flex flex-col gap-0.5 leading-relaxed">
+                  <span className="font-extrabold text-slate-800">Badge Ditentukan Otomatis:</span>
+                  <p className="text-[11px] text-slate-500">
+                    • <strong className="text-rose-600">Sold Out:</strong> Diambil dari status ketersediaan di bawah.<br />
+                    • <strong className="text-[#FF2E74]">Promo:</strong> Paket yang di-set di Pengaturan Toko.<br />
+                    • <strong className="text-orange-600">Populer:</strong> Paket yang paling banyak dibeli pelanggan.<br />
+                    • <strong className="text-amber-700">Sultan:</strong> Paket di atas 10.000 Robux.
+                  </p>
+                </div>
               </div>
 
               {/* Status Ketersediaan (Fitur Sold Out!) */}
