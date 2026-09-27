@@ -1,129 +1,76 @@
 "use client";
 
 import React from "react";
+import { useStoreSettings } from "@/hooks/useStoreSettings";
 
 interface BrandLogoProps {
   className?: string;
   size?: "sm" | "md" | "lg";
+  name?: string;
 }
 
-export default function BrandLogo({ className = "", size = "md" }: BrandLogoProps) {
-  // Dimensions
-  const sizes = {
-    sm: { width: 110, height: 32, fontSize: 24, y: 24, vietWidth: 50 },
-    md: { width: 135, height: 38, fontSize: 28, y: 29, vietWidth: 58 },
-    lg: { width: 170, height: 48, fontSize: 36, y: 37, vietWidth: 74 },
+function splitBrandName(name: string): [string, string] {
+  if (!name) return ["Viet", "Blox"];
+  const trimmed = name.trim();
+  if (trimmed.includes(" ")) {
+    const idx = trimmed.indexOf(" ");
+    return [trimmed.slice(0, idx), trimmed.slice(idx + 1)];
+  }
+  // If PascalCase like VietBlox
+  const match = trimmed.match(/^([A-Z][a-z0-9]+)([A-Z].*)$/);
+  if (match) {
+    return [match[1], match[2]];
+  }
+  return [trimmed, ""];
+}
+
+export default function BrandLogo({ className = "", size = "md", name }: BrandLogoProps) {
+  const { settings } = useStoreSettings();
+  const rawName = name || settings?.storeName || "VietBlox";
+
+  const [part1, part2] = splitBrandName(rawName);
+
+  const sizeClasses = {
+    sm: "text-[20px] sm:text-[22px]",
+    md: "text-[24px] sm:text-[26px]",
+    lg: "text-[30px] sm:text-[34px]",
   };
 
-  const current = sizes[size];
-
   return (
-    <div className={`inline-flex items-center select-none ${className}`}>
-      <svg
-        viewBox={`0 0 ${current.width} ${current.height}`}
-        style={{ width: `${current.width}px`, height: `${current.height}px` }}
-        className="overflow-visible"
-        aria-label="VietBlox Logo"
-      >
-        <defs>
-          {/* Pink Gradient for 'Viet' */}
-          <linearGradient id={`vietGrad-${size}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#FFA6B8" />
-            <stop offset="25%" stopColor="#FF7E98" />
-            <stop offset="70%" stopColor="#FF5277" />
-            <stop offset="100%" stopColor="#E62E5C" />
-          </linearGradient>
+    <div className={`inline-flex items-center gap-0.5 font-black select-none tracking-tight leading-none ${sizeClasses[size]} ${className}`}>
+      {/* Part 1 (Pink 3D Gradient) */}
+      {part1 && (
+        <span
+          className="font-brand font-black inline-block"
+          style={{
+            fontFamily: "var(--font-fredoka), 'Fredoka', 'Nunito', 'Arial Rounded MT Bold', sans-serif",
+            background: "linear-gradient(180deg, #FFA6B8 0%, #FF7E98 25%, #FF5277 70%, #E62E5C 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            filter: "drop-shadow(0 1.5px 0 #801B34) drop-shadow(0 2.5px 1.5px rgba(58,13,24,0.35))",
+            letterSpacing: "-0.5px",
+          }}
+        >
+          {part1}
+        </span>
+      )}
 
-          {/* Yellow Gradient for 'Blox' */}
-          <linearGradient id={`bloxGrad-${size}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#FFF280" />
-            <stop offset="30%" stopColor="#FFDE43" />
-            <stop offset="75%" stopColor="#FDB813" />
-            <stop offset="100%" stopColor="#E08B00" />
-          </linearGradient>
-
-          {/* Subtle 3D Shadow */}
-          <filter id={`logoShadow-${size}`} x="-15%" y="-15%" width="130%" height="140%">
-            <feDropShadow dx="0" dy="2.5" stdDeviation="1" floodColor="#3A0D18" floodOpacity="0.35" />
-          </filter>
-        </defs>
-
-        <g filter={`url(#logoShadow-${size})`}>
-          {/* ====== 'Viet' LAYER ====== */}
-          {/* 1. Dark Outline Stroke (Thick outline) */}
-          <text
-            x="2"
-            y={current.y}
-            className="font-black font-brand"
-            style={{
-              fontFamily: "var(--font-fredoka), 'Fredoka', 'Nunito', 'Arial Rounded MT Bold', sans-serif",
-              fontSize: `${current.fontSize}px`,
-              fontWeight: 800,
-              stroke: "#801B34",
-              strokeWidth: size === "lg" ? "5.5px" : "4.5px",
-              strokeLinejoin: "round",
-              strokeLinecap: "round",
-              fill: "none",
-              letterSpacing: "-0.5px",
-            }}
-          >
-            Viet
-          </text>
-
-          {/* 2. Gradient Fill */}
-          <text
-            x="2"
-            y={current.y}
-            className="font-black font-brand"
-            style={{
-              fontFamily: "var(--font-fredoka), 'Fredoka', 'Nunito', 'Arial Rounded MT Bold', sans-serif",
-              fontSize: `${current.fontSize}px`,
-              fontWeight: 800,
-              fill: `url(#vietGrad-${size})`,
-              letterSpacing: "-0.5px",
-            }}
-          >
-            Viet
-          </text>
-
-          {/* ====== 'Blox' LAYER ====== */}
-          {/* 1. Dark Outline Stroke (Golden-brown outline) */}
-          <text
-            x={current.vietWidth}
-            y={current.y}
-            className="font-black font-brand"
-            style={{
-              fontFamily: "var(--font-fredoka), 'Fredoka', 'Nunito', 'Arial Rounded MT Bold', sans-serif",
-              fontSize: `${current.fontSize}px`,
-              fontWeight: 800,
-              stroke: "#78350F",
-              strokeWidth: size === "lg" ? "5.5px" : "4.5px",
-              strokeLinejoin: "round",
-              strokeLinecap: "round",
-              fill: "none",
-              letterSpacing: "-0.5px",
-            }}
-          >
-            Blox
-          </text>
-
-          {/* 2. Gradient Fill */}
-          <text
-            x={current.vietWidth}
-            y={current.y}
-            className="font-black font-brand"
-            style={{
-              fontFamily: "var(--font-fredoka), 'Fredoka', 'Nunito', 'Arial Rounded MT Bold', sans-serif",
-              fontSize: `${current.fontSize}px`,
-              fontWeight: 800,
-              fill: `url(#bloxGrad-${size})`,
-              letterSpacing: "-0.5px",
-            }}
-          >
-            Blox
-          </text>
-        </g>
-      </svg>
+      {/* Part 2 (Gold/Yellow 3D Gradient) */}
+      {part2 && (
+        <span
+          className="font-brand font-black inline-block ml-0.5"
+          style={{
+            fontFamily: "var(--font-fredoka), 'Fredoka', 'Nunito', 'Arial Rounded MT Bold', sans-serif",
+            background: "linear-gradient(180deg, #FFF280 0%, #FFDE43 30%, #FDB813 75%, #E08B00 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            filter: "drop-shadow(0 1.5px 0 #78350F) drop-shadow(0 2.5px 1.5px rgba(120,53,15,0.35))",
+            letterSpacing: "-0.5px",
+          }}
+        >
+          {part2}
+        </span>
+      )}
     </div>
   );
 }
