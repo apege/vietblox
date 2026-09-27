@@ -19,7 +19,7 @@ export default function LogoutModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-pink-100 flex flex-col items-center text-center gap-4 animate-in zoom-in-95 duration-200">
