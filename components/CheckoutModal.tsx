@@ -6,14 +6,16 @@ import Image from "next/image";
 import {
   X,
   Phone,
-  CheckCircle2,
-  Upload,
-  Loader2,
-  MessageCircle,
   Globe,
-  ChevronRight,
+  MessageCircle,
   Check,
+  ChevronRight,
+  Upload,
+  CheckCircle2,
+  Loader2,
 } from "lucide-react";
+import { compressImageToWebP } from "@/lib/imageCompressor";
+import { useStoreSettings } from "@/hooks/useStoreSettings";
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -26,8 +28,6 @@ interface CheckoutModalProps {
 type PaymentMethod = "website" | "whatsapp" | null;
 type Step = "detail" | "payment" | "qris" | "success";
 
-const WA_NUMBER = "6281234567890";
-
 export default function CheckoutModal({
   isOpen,
   onClose,
@@ -35,6 +35,8 @@ export default function CheckoutModal({
   robuxAmount,
   price,
 }: CheckoutModalProps) {
+  const { settings } = useStoreSettings();
+  const cleanWa = settings.whatsappNumber.replace(/[^0-9]/g, "") || "6281234567890";
   const [step, setStep] = useState<Step>("detail");
   const [waNumber, setWaNumber] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(null);
@@ -42,6 +44,7 @@ export default function CheckoutModal({
   const [uploadPreview, setUploadPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [waOpened, setWaOpened] = useState(false);
+  const [createdOrderCode, setCreatedOrderCode] = useState<string>("");
   const [mounted, setMounted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -73,96 +76,114 @@ export default function CheckoutModal({
       setUploadPreview(null);
       setIsSubmitting(false);
       setWaOpened(false);
+      setCreatedOrderCode("");
     }, 300);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadedFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () => setUploadPreview(reader.result as string);
-    reader.readAsDataURL(file);
+    try {
+      // Compress to lightweight WebP data URL (~30-80KB)
+      const webpDataUrl = await compressImageToWebP(file, { maxWidth: 960, maxHeight: 1280, quality: 0.82 });
+      setUploadPreview(webpDataUrl);
+    } catch {
+      const reader = new FileReader();
+      reader.onloadend = () => setUploadPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
   };
 
-  const handleProceed = () => {
+  const handleProceed = async () => {
     if (!waNumber.trim() || !paymentMethod) return;
 
     if (paymentMethod === "website") {
       setStep("qris");
     } else {
       // WhatsApp method
-      const msg = encodeURIComponent(
-        `Halo Admin VietBlox, saya ingin Top Up Robux:\n- Username Roblox: ${username}\n- Paket: ${robuxAmount.toLocaleString("id-ID")} Robux (${price})\n- No. WA: ${waNumber}\n\nMohon diproses ya kak!`
-      );
+      let newOrderCode = `VBX${Math.floor(10000000 + Math.random() * 89999999)}`;
 
-      // Save new order to admin store
+      // Save to Backend Neon API
       try {
-        const stored = JSON.parse(localStorage.getItem("vietblox_admin_orders_v2") || "[]");
-        const newOrder = {
-          id: `VBX${Math.floor(10000000 + Math.random() * 89999999)}`,
-          username: username,
-          robloxUserId: `${Math.floor(1000000000 + Math.random() * 8999999999)}`,
-          avatarUrl: null,
-          robuxAmount: robuxAmount,
-          price: price,
-          numericPrice: parseInt(price.replace(/[^0-9]/g, "")) || 0,
-          paymentMethod: "WHATSAPP",
-          status: "masuk",
-          statusLabel: "Menunggu Bayar",
-          date: `${new Date().getDate()} ${new Date().toLocaleString("id-ID", { month: "short" })}, ${new Date().getHours().toString().padStart(2, "0")}.${new Date().getMinutes().toString().padStart(2, "0")}`,
-          fullDate: `${new Date().getDate()} ${new Date().toLocaleString("id-ID", { month: "long" })} 2026 pukul ${new Date().getHours().toString().padStart(2, "0")}:${new Date().getMinutes().toString().padStart(2, "0")} WIB`,
-          phone: `+62${waNumber}`,
-          customerNotes: "Pemesanan via WhatsApp Direct",
-          adminNotes: "",
-          paymentProof: null,
-        };
-        localStorage.setItem("vietblox_admin_orders_v1", JSON.stringify([newOrder, ...stored]));
+        const res = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            robloxUsername: username,
+            customerPhone: `+62${waNumber}`,
+            robuxAmount: robuxAmount,
+            price: price,
+            paymentMethod: "WHATSAPP",
+            customerNotes: "Pemesanan via WhatsApp Direct",
+          }),
+        });
+        const data = await res.json();
+        if (data.success && data.order?.orderCode) {
+          newOrderCode = data.order.orderCode;
+        }
       } catch (e) {
-        console.error("Failed to save order", e);
+        console.error("Failed to post order to API", e);
       }
 
-      window.open(`https://wa.me/${WA_NUMBER}?text=${msg}`, "_blank");
+      setCreatedOrderCode(newOrderCode);
+
+      const msg = encodeURIComponent(
+        `Halo Admin ${settings.storeName}, saya ingin Top Up Robux:\n- Kode Order: #${newOrderCode}\n- Username Roblox: ${username}\n- Paket: ${robuxAmount.toLocaleString("id-ID")} Robux (${price})\n- No. WA: +62${waNumber}\n\nMohon diproses ya kak!`
+      );
+
+      window.open(`https://wa.me/${cleanWa}?text=${msg}`, "_blank");
       setWaOpened(true);
       setTimeout(() => setStep("success"), 800);
     }
   };
 
-  const handleSubmitProof = () => {
+  const handleSubmitProof = async () => {
     if (!uploadedFile) return;
     setIsSubmitting(true);
 
-    // Save new order to admin store
+    let newOrderCode = `VBX${Math.floor(10000000 + Math.random() * 89999999)}`;
+
+    // Save to Backend Neon API
     try {
-      const stored = JSON.parse(localStorage.getItem("vietblox_admin_orders_v2") || "[]");
-      const newOrder = {
-        id: `VBX${Math.floor(10000000 + Math.random() * 89999999)}`,
-        username: username,
-        robloxUserId: `${Math.floor(1000000000 + Math.random() * 8999999999)}`,
-        avatarUrl: null,
-        robuxAmount: robuxAmount,
-        price: price,
-        numericPrice: parseInt(price.replace(/[^0-9]/g, "")) || 0,
-        paymentMethod: "WEBSITE",
-        status: "masuk",
-        statusLabel: "Menunggu Bayar",
-        date: `${new Date().getDate()} ${new Date().toLocaleString("id-ID", { month: "short" })}, ${new Date().getHours().toString().padStart(2, "0")}.${new Date().getMinutes().toString().padStart(2, "0")}`,
-        fullDate: `${new Date().getDate()} ${new Date().toLocaleString("id-ID", { month: "long" })} 2026 pukul ${new Date().getHours().toString().padStart(2, "0")}:${new Date().getMinutes().toString().padStart(2, "0")} WIB`,
-        phone: `+62${waNumber}`,
-        customerNotes: "Pemesanan website QRIS (Bukti Transfer diunggah)",
-        adminNotes: "",
-        paymentProof: uploadPreview || "/payments/qris.svg",
-      };
-      localStorage.setItem("vietblox_admin_orders_v2", JSON.stringify([newOrder, ...stored]));
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          robloxUsername: username,
+          customerPhone: `+62${waNumber}`,
+          robuxAmount: robuxAmount,
+          price: price,
+          paymentMethod: "WEBSITE",
+          paymentProofPath: uploadPreview || null,
+          customerNotes: "Pemesanan website QRIS (Bukti Transfer diunggah)",
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.order?.orderCode) {
+        newOrderCode = data.order.orderCode;
+      }
     } catch (e) {
-      console.error("Failed to save order", e);
+      console.error("Failed to post order to API", e);
     }
+
+    // Save proof to local storage for immediate tracking view
+    if (uploadPreview) {
+      try {
+        localStorage.setItem(`vb_proof_${newOrderCode}`, uploadPreview);
+        localStorage.setItem(`vb_proof_${username.toLowerCase()}`, uploadPreview);
+      } catch {
+        // ignore storage quota error
+      }
+    }
+
+    setCreatedOrderCode(newOrderCode);
 
     // Direct to WhatsApp to send confirmation & attach proof to admin
     const msg = encodeURIComponent(
-      `Halo Admin VietBlox, saya sudah melakukan pembayaran via QRIS Website:\n- Username Roblox: ${username}\n- Paket: ${robuxAmount.toLocaleString("id-ID")} Robux (${price})\n- No. WA: +62${waNumber}\n\nSaya lampirkan bukti transfernya ya min. Mohon dicek dan diproses, terima kasih!`
+      `Halo Admin ${settings.storeName}, saya sudah melakukan pembayaran via QRIS Website:\n- Kode Order: #${newOrderCode}\n- Username Roblox: ${username}\n- Paket: ${robuxAmount.toLocaleString("id-ID")} Robux (${price})\n- No. WA: +62${waNumber}\n\nSaya lampirkan bukti transfernya ya min. Mohon dicek dan diproses, terima kasih!`
     );
-    window.open(`https://wa.me/${WA_NUMBER}?text=${msg}`, "_blank");
+    window.open(`https://wa.me/${cleanWa}?text=${msg}`, "_blank");
 
     setTimeout(() => {
       setIsSubmitting(false);
@@ -330,10 +351,9 @@ export default function CheckoutModal({
               <div className="flex flex-col items-center gap-3 p-5 rounded-2xl bg-white border-2 border-dashed border-pink-200">
                 <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Scan QRIS Berikut</p>
                 <div className="w-48 h-48 bg-white border border-slate-200 rounded-2xl flex items-center justify-center shadow-sm overflow-hidden">
-                  {/* QRIS placeholder — replace src with real QRIS image */}
                   <img
-                    src="/payments/qris.svg"
-                    alt="QRIS VietBlox"
+                    src={settings.qrisImageUrl || "/payments/qris.svg"}
+                    alt={`QRIS ${settings.storeName}`}
                     className="w-40 h-40 object-contain p-2"
                   />
                 </div>
@@ -447,6 +467,12 @@ export default function CheckoutModal({
 
             {/* Order recap */}
             <div className="w-full p-4 rounded-2xl bg-[#FFF0F5] border border-pink-100 flex flex-col gap-2 text-left">
+              {createdOrderCode && (
+                <div className="flex justify-between pb-1.5 border-b border-pink-200/60">
+                  <span className="text-xs text-slate-500 font-semibold">Kode Order</span>
+                  <span className="text-xs font-mono font-black text-[#FF2E74]">#{createdOrderCode}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-xs text-slate-500 font-semibold">Username</span>
                 <span className="text-xs font-black text-slate-900">{username}</span>
@@ -467,12 +493,20 @@ export default function CheckoutModal({
 
             <p className="text-[11px] text-slate-400 font-medium">Estimasi masuk: <span className="font-bold text-slate-600">1–3 menit</span></p>
 
-            <button
-              onClick={handleClose}
-              className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#FF2E74] to-[#FF6B6B] text-white font-black text-sm shadow-[0_6px_20px_rgba(255,46,116,0.35)] hover:opacity-90 transition-all"
-            >
-              Selesai
-            </button>
+            <div className="w-full flex flex-col gap-2">
+              <a
+                href={`/tracking?username=${encodeURIComponent(username)}&order_code=${createdOrderCode}`}
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#FF2E74] to-[#FF6B6B] text-white font-black text-sm shadow-[0_6px_20px_rgba(255,46,116,0.35)] hover:opacity-90 transition-all text-center"
+              >
+                Lacak Status Pesanan Saya
+              </a>
+              <button
+                onClick={handleClose}
+                className="w-full py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all"
+              >
+                Kembali ke Toko
+              </button>
+            </div>
           </div>
         )}
       </div>
