@@ -16,6 +16,7 @@ import {
   MessageSquare,
   CheckCircle2,
 } from "lucide-react";
+import { cleanUsername, getStoredPackages, RobuxPackage } from "@/lib/adminStore";
 
 export interface TestimonialItem {
   id: string;
@@ -31,123 +32,13 @@ export interface TestimonialItem {
 
 const STORAGE_KEY_TESTIMONIALS = "vietblox_testimonials_v2";
 
-const initialTestimonialsData: TestimonialItem[] = [
-  {
-    id: "testi-1",
-    username: "Londolreng61",
-    isVerified: true,
-    robuxAmount: 4200,
-    rating: 3,
-    timeAgo: "Baru saja",
-    comment: "Sedikit slowrespon ehee overall semuanya aman kok",
-    adminReply: null,
-    status: "active",
-  },
-  {
-    id: "testi-2",
-    username: "Crasiel17",
-    isVerified: true,
-    robuxAmount: 3700,
-    rating: 5,
-    timeAgo: "Baru saja",
-    comment: "Mantap banget proses kilat gak sampe 3 menit Robux udah masuk ke akun! Makasih VietBlox ❤️",
-    adminReply: "Terima kasih banyak sudah order di VietBlox kak! Ditunggu orderan selanjutnya yaa 🙏🔥",
-    status: "active",
-  },
-  {
-    id: "testi-3",
-    username: "NaufalGamerz",
-    isVerified: true,
-    robuxAmount: 1000,
-    rating: 5,
-    timeAgo: "1 jam lalu",
-    comment: "Harga termurah se-Indonesia, recommended seller no tipu tipu.",
-    adminReply: null,
-    status: "active",
-  },
-  {
-    id: "testi-4",
-    username: "Kayla_Blox",
-    isVerified: true,
-    robuxAmount: 2500,
-    rating: 5,
-    timeAgo: "3 jam lalu",
-    comment: "Admin ramah bgt waktu ditanya lewat WA, langsung dipandu sampe sukses!",
-    adminReply: "Sama-sama kak Kayla, senang bisa membantu! ✨",
-    status: "active",
-  },
-  {
-    id: "testi-5",
-    username: "BagasPro_99",
-    isVerified: true,
-    robuxAmount: 5000,
-    rating: 5,
-    timeAgo: "5 jam lalu",
-    comment: "Top markotop! Udah beli 3 kali disini dan selalu lancar jaya.",
-    adminReply: null,
-    status: "active",
-  },
-  {
-    id: "testi-6",
-    username: "Reza_Sultan",
-    isVerified: true,
-    robuxAmount: 10000,
-    rating: 5,
-    timeAgo: "1 hari lalu",
-    comment: "Beli paket 10k Robux instan tanpa ribet. Langganan tetap disini pokoknya.",
-    adminReply: null,
-    status: "active",
-  },
-  {
-    id: "testi-7",
-    username: "Dika_Plays",
-    isVerified: true,
-    robuxAmount: 500,
-    rating: 5,
-    timeAgo: "1 hari lalu",
-    comment: "Aman dan terpercaya bgt buat topup game pass.",
-    adminReply: null,
-    status: "active",
-  },
-  {
-    id: "testi-8",
-    username: "Siti_Chaan",
-    isVerified: true,
-    robuxAmount: 800,
-    rating: 5,
-    timeAgo: "2 hari lalu",
-    comment: "Suka bgt sama websitenya lucu dan prosesnya cepet banget 💕",
-    adminReply: null,
-    status: "active",
-  },
-  {
-    id: "testi-9",
-    username: "Rian_Gamer01",
-    isVerified: true,
-    robuxAmount: 1500,
-    rating: 5,
-    timeAgo: "2 hari lalu",
-    comment: "QRIS langsung kebaca dan proses otomatis. Keren abis!",
-    adminReply: null,
-    status: "active",
-  },
-  {
-    id: "testi-10",
-    username: "Arka_Robloxian",
-    isVerified: true,
-    robuxAmount: 2000,
-    rating: 5,
-    timeAgo: "3 hari lalu",
-    comment: "Gak nyesel langganan di VietBlox, murah dan 100% legal garansi.",
-    adminReply: null,
-    status: "active",
-  },
-];
+const initialTestimonialsData: TestimonialItem[] = [];
 
 type FilterTab = "all" | "active" | "hidden" | "needs-reply";
 
 export default function TestimoniManagementView() {
   const [testimonials, setTestimonials] = useState<TestimonialItem[]>([]);
+  const [packages, setPackages] = useState<RobuxPackage[]>([]);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -161,22 +52,74 @@ export default function TestimoniManagementView() {
   const [formUsername, setFormUsername] = useState("");
   const [formRating, setFormRating] = useState(5);
   const [formComment, setFormComment] = useState("");
-  const [formRobuxAmount, setFormRobuxAmount] = useState("1000");
+  const [formRobuxAmount, setFormRobuxAmount] = useState("1800");
   const [formReplyText, setFormReplyText] = useState("");
 
-  // Load testimonials
-  useEffect(() => {
+  // Helper to format ISO date
+  const formatTimeAgo = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      const diffMinutes = Math.floor((Date.now() - date.getTime()) / 60000);
+      if (diffMinutes < 1) return "Baru saja";
+      if (diffMinutes < 60) return `${diffMinutes} menit lalu`;
+      const diffHours = Math.floor(diffMinutes / 60);
+      if (diffHours < 24) return `${diffHours} jam lalu`;
+      const diffDays = Math.floor(diffHours / 24);
+      return `${diffDays} hari lalu`;
+    } catch {
+      return "Baru saja";
+    }
+  };
+
+  const loadTestimonials = async () => {
+    try {
+      const res = await fetch("/api/testimonials?all=true");
+      const data = await res.json();
+      if (data.success && Array.isArray(data.testimonials)) {
+        const mapped: TestimonialItem[] = data.testimonials.map((row: any) => ({
+          id: row.id.toString(),
+          username: row.name || "Anonim",
+          isVerified: true,
+          robuxAmount: 1000,
+          rating: row.rating || 5,
+          timeAgo: formatTimeAgo(row.created_at),
+          comment: row.message || "",
+          adminReply: row.admin_reply || null,
+          status: row.status === "hidden" ? "hidden" : "active",
+        }));
+        setTestimonials(mapped);
+        localStorage.setItem(STORAGE_KEY_TESTIMONIALS, JSON.stringify(mapped));
+        return;
+      }
+    } catch (e) {
+      console.warn("Failed to fetch testimonials from API, checking local storage:", e);
+    }
+
     try {
       const saved = localStorage.getItem(STORAGE_KEY_TESTIMONIALS);
-      if (saved) {
-        setTestimonials(JSON.parse(saved));
-      } else {
-        setTestimonials(initialTestimonialsData);
-        localStorage.setItem(STORAGE_KEY_TESTIMONIALS, JSON.stringify(initialTestimonialsData));
-      }
+      if (saved) setTestimonials(JSON.parse(saved));
+      else setTestimonials([]);
     } catch {
-      setTestimonials(initialTestimonialsData);
+      setTestimonials([]);
     }
+  };
+
+  // Load testimonials & packages
+  useEffect(() => {
+    loadTestimonials();
+    const pkgs = getStoredPackages();
+    setPackages(pkgs);
+
+    const fetchPkgs = async () => {
+      try {
+        const res = await fetch("/api/products");
+        const data = await res.json();
+        if (data.success && Array.isArray(data.products) && data.products.length > 0) {
+          setPackages(data.products);
+        }
+      } catch {}
+    };
+    fetchPkgs();
   }, []);
 
   const saveTestimonials = (items: TestimonialItem[]) => {
@@ -188,13 +131,10 @@ export default function TestimoniManagementView() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_TESTIMONIALS);
-      if (saved) setTestimonials(JSON.parse(saved));
-    } catch {}
-    setTimeout(() => setIsRefreshing(false), 400);
+    await loadTestimonials();
+    setIsRefreshing(false);
   };
 
   // Metrics
@@ -208,17 +148,38 @@ export default function TestimoniManagementView() {
     : "5.0";
 
   // Actions
-  const toggleVisibility = (id: string) => {
+  const toggleVisibility = async (id: string) => {
+    const current = testimonials.find((t) => t.id === id);
+    const newStatus = current?.status === "active" ? "hidden" : "active";
+
     const updated = testimonials.map((t) =>
-      t.id === id ? { ...t, status: (t.status === "active" ? "hidden" : "active") as "active" | "hidden" } : t
+      t.id === id ? { ...t, status: newStatus as "active" | "hidden" } : t
     );
     saveTestimonials(updated);
+
+    try {
+      await fetch("/api/testimonials", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status: newStatus }),
+      });
+    } catch (e) {
+      console.error("Failed to update status on server:", e);
+    }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm("Apakah Anda yakin ingin menghapus ulasan ini?")) {
       const updated = testimonials.filter((t) => t.id !== id);
       saveTestimonials(updated);
+
+      try {
+        await fetch(`/api/testimonials?id=${encodeURIComponent(id)}`, {
+          method: "DELETE",
+        });
+      } catch (e) {
+        console.error("Failed to delete testimonial on server:", e);
+      }
     }
   };
 
@@ -245,19 +206,31 @@ export default function TestimoniManagementView() {
     setFormReplyText(item.adminReply || "");
   };
 
-  const handleSaveReply = (e: React.FormEvent) => {
+  const handleSaveReply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!replyingItem) return;
 
+    const replyText = formReplyText.trim() || null;
     const updated = testimonials.map((t) =>
-      t.id === replyingItem.id ? { ...t, adminReply: formReplyText.trim() || null } : t
+      t.id === replyingItem.id ? { ...t, adminReply: replyText } : t
     );
     saveTestimonials(updated);
+
+    try {
+      await fetch("/api/testimonials", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: replyingItem.id, adminReply: replyText }),
+      });
+    } catch (err) {
+      console.error("Failed to save reply on server:", err);
+    }
+
     setReplyingItem(null);
     setFormReplyText("");
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formUsername.trim() || !formComment.trim()) return;
 
@@ -292,6 +265,27 @@ export default function TestimoniManagementView() {
         status: "active",
       };
       saveTestimonials([newItem, ...testimonials]);
+
+      try {
+        const res = await fetch("/api/testimonials", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: cleanUsername,
+            message: formComment.trim(),
+            rating: formRating,
+          }),
+        });
+        const data = await res.json();
+        if (data.success && data.item) {
+          // Replace temporary id with real id from DB
+          setTestimonials((prev) =>
+            prev.map((t) => (t.id === newItem.id ? { ...t, id: data.item.id.toString() } : t))
+          );
+        }
+      } catch (err) {
+        console.error("Failed to add testimonial to server:", err);
+      }
     }
 
     setIsAddModalOpen(false);
@@ -498,9 +492,9 @@ export default function TestimoniManagementView() {
 
                       <div className="flex flex-col gap-1">
                         {/* Name & Badges Row */}
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                           <span className="text-sm font-black text-slate-900">
-                            @{item.username}
+                            @{cleanUsername(item.username)}
                           </span>
 
                           {/* Terverifikasi Badge */}
@@ -514,10 +508,6 @@ export default function TestimoniManagementView() {
                           {/* Robux Amount Badge */}
                           <span className="px-2 py-0.5 rounded-md bg-pink-50 text-[#FF2E74] text-[10px] font-black">
                             {item.robuxAmount.toLocaleString("id-ID")} Robux
-                          </span>
-
-                          <span className="text-[10px] text-slate-400 font-medium">
-                            #{item.robuxAmount.toLocaleString("id-ID")} Robux
                           </span>
                         </div>
 
@@ -542,52 +532,53 @@ export default function TestimoniManagementView() {
                     </div>
 
                     {/* Right: Action Buttons (Tampil/Sembunyi, Edit, Balas, Delete) */}
-                    <div className="flex items-center gap-2 self-end sm:self-auto flex-shrink-0">
-                      
-                      {/* Tampil / Sembunyi Button */}
-                      <button
-                        onClick={() => toggleVisibility(item.id)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                          isVisible
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                            : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
-                        }`}
-                      >
-                        {isVisible ? (
-                          <>
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>Tampil</span>
-                          </>
-                        ) : (
-                          <>
-                            <EyeOff className="w-3.5 h-3.5" />
-                            <span>Sembunyi</span>
-                          </>
-                        )}
-                      </button>
+                    <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2 w-full sm:w-auto pt-2.5 sm:pt-0 border-t border-slate-100 sm:border-0 flex-shrink-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {/* Tampil / Sembunyi Button */}
+                        <button
+                          onClick={() => toggleVisibility(item.id)}
+                          className={`inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                            isVisible
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                              : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
+                          }`}
+                        >
+                          {isVisible ? (
+                            <>
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>Tampil</span>
+                            </>
+                          ) : (
+                            <>
+                              <EyeOff className="w-3.5 h-3.5" />
+                              <span>Sembunyi</span>
+                            </>
+                          )}
+                        </button>
 
-                      {/* Edit Button */}
-                      <button
-                        onClick={() => openEditModal(item)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all cursor-pointer"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                        <span>Edit</span>
-                      </button>
+                        {/* Edit Button */}
+                        <button
+                          onClick={() => openEditModal(item)}
+                          className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all cursor-pointer"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>Edit</span>
+                        </button>
 
-                      {/* Balas Button */}
-                      <button
-                        onClick={() => openReplyModal(item)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-pink-50 hover:bg-pink-100 text-[#FF2E74] border border-pink-200/80 transition-all cursor-pointer"
-                      >
-                        <CornerDownRight className="w-3.5 h-3.5" />
-                        <span>{item.adminReply ? "Edit Balasan" : "Balas"}</span>
-                      </button>
+                        {/* Balas Button */}
+                        <button
+                          onClick={() => openReplyModal(item)}
+                          className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold bg-pink-50 hover:bg-pink-100 text-[#FF2E74] border border-pink-200/80 transition-all cursor-pointer"
+                        >
+                          <CornerDownRight className="w-3.5 h-3.5" />
+                          <span>{item.adminReply ? "Edit Balasan" : "Balas"}</span>
+                        </button>
+                      </div>
 
                       {/* Delete Icon Button */}
                       <button
                         onClick={() => handleDelete(item.id)}
-                        className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all cursor-pointer"
+                        className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all cursor-pointer flex-shrink-0"
                         title="Hapus Ulasan"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -598,13 +589,13 @@ export default function TestimoniManagementView() {
                   </div>
 
                   {/* Testimonial Quote */}
-                  <div className="pl-13 text-xs sm:text-[13px] text-slate-800 font-semibold leading-relaxed">
+                  <div className="sm:pl-13 text-xs sm:text-[13px] text-slate-800 font-semibold leading-relaxed">
                     “{item.comment}”
                   </div>
 
                   {/* Admin Reply Box if exists */}
                   {item.adminReply && (
-                    <div className="ml-13 p-3 rounded-2xl bg-pink-50/60 border border-pink-200/70 flex flex-col gap-1 text-xs">
+                    <div className="sm:ml-13 p-3 rounded-2xl bg-pink-50/60 border border-pink-200/70 flex flex-col gap-1 text-xs">
                       <div className="flex items-center justify-between">
                         <span className="font-black text-[#FF2E74] flex items-center gap-1.5">
                           <MessageSquare className="w-3.5 h-3.5" />
@@ -633,7 +624,7 @@ export default function TestimoniManagementView() {
 
       {/* ─── 5. Modal Tambah / Edit Testimoni (Matching Screenshot 2 - Tanpa Upload Foto) ─── */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="w-full max-w-lg rounded-3xl bg-white border border-pink-200 shadow-2xl p-6 sm:p-7 flex flex-col gap-5 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             
             {/* Modal Header */}
@@ -715,7 +706,7 @@ export default function TestimoniManagementView() {
               </div>
 
               {/* Paket Robux / Kode Order (Opsional) */}
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-black text-slate-800">
                     Paket Robux / Kode Order (Opsional)
@@ -724,13 +715,52 @@ export default function TestimoniManagementView() {
                     Pilih dari List atau Ketik
                   </span>
                 </div>
-                <input
-                  type="text"
-                  placeholder="misal: 1000 atau 4200"
+
+                {/* Dropdown Select Paket yang Tersedia */}
+                <select
                   value={formRobuxAmount}
                   onChange={(e) => setFormRobuxAmount(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#FF2E74] focus:ring-2 focus:ring-pink-200/50"
-                />
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-pink-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#FF2E74] focus:ring-2 focus:ring-pink-200/50 bg-white cursor-pointer shadow-2xs"
+                >
+                  <option value="">-- Pilih Paket Robux yang Tersedia --</option>
+                  {packages.map((pkg) => (
+                    <option key={pkg.id || pkg.amount} value={pkg.amount.toString()}>
+                      +{pkg.amount.toLocaleString("id-ID")} Robux ({pkg.price})
+                    </option>
+                  ))}
+                </select>
+
+                {/* Quick Selection Chips / Pills */}
+                {packages.length > 0 && (
+                  <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                    <span className="text-[10px] font-bold text-slate-400 mr-0.5">Pilihan Cepat:</span>
+                    {packages.slice(0, 6).map((pkg) => (
+                      <button
+                        key={pkg.id || pkg.amount}
+                        type="button"
+                        onClick={() => setFormRobuxAmount(pkg.amount.toString())}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition-all cursor-pointer ${
+                          formRobuxAmount === pkg.amount.toString()
+                            ? "bg-[#FF2E74] text-white border-[#FF2E74] shadow-xs scale-105"
+                            : "bg-pink-50 hover:bg-pink-100 text-[#FF2E74] border-pink-200"
+                        }`}
+                      >
+                        +{pkg.amount.toLocaleString("id-ID")}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Manual Input (Ketik custom nominal atau kode order) */}
+                <div className="relative flex items-center mt-0.5">
+                  <input
+                    type="text"
+                    placeholder="Atau ketik manual misal: 4200 atau #VBX12345"
+                    value={formRobuxAmount}
+                    onChange={(e) => setFormRobuxAmount(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#FF2E74] focus:ring-2 focus:ring-pink-200/50 bg-slate-50/50"
+                  />
+                </div>
               </div>
 
               {/* Modal Buttons */}
@@ -757,11 +787,11 @@ export default function TestimoniManagementView() {
 
       {/* ─── 6. Modal Balas Testimoni ─── */}
       {replyingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="w-full max-w-md rounded-3xl bg-white border border-pink-200 shadow-2xl p-6 flex flex-col gap-4 animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between pb-2 border-b border-pink-100">
               <h3 className="text-base font-black text-slate-900">
-                Balas Ulasan @{replyingItem.username}
+                Balas Ulasan @{cleanUsername(replyingItem.username)}
               </h3>
               <button
                 onClick={() => setReplyingItem(null)}
