@@ -10,7 +10,7 @@ import {
   Check,
   ExternalLink,
 } from "lucide-react";
-import { OrderItem } from "@/lib/adminStore";
+import { OrderItem, cleanUsername } from "@/lib/adminStore";
 
 interface CustomerListViewProps {
   orders: OrderItem[];
@@ -188,13 +188,10 @@ export default function CustomerListView({
               >
                 {/* Left Side: Username + Display Name + Status + ID & WA */}
                 <div className="flex flex-col gap-1 min-w-0">
-                  {/* Primary Row: @username(@displayName) + AKTIF / BLACKLIST badge */}
+                  {/* Primary Row: @username + AKTIF / BLACKLIST badge */}
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-base sm:text-lg font-black text-[#FF2E74] tracking-tight">
-                      @{customer.username}
-                      <span className="font-bold text-slate-500 text-sm sm:text-base ml-1">
-                        (@{customer.username})
-                      </span>
+                      @{cleanUsername(customer.username)}
                     </span>
 
                     {/* Status Badge */}
