@@ -1,14 +1,26 @@
 import { neon } from "@neondatabase/serverless";
 
+// Fallback to configured project database string if process.env isn't bound on Cloudflare yet
+const FALLBACK_DATABASE_URL =
+  "postgresql://neondb_owner:npg_kNgGz7hl1MUS@ep-lingering-hall-b3i8pm10-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require";
+
 let clientInstance: any = null;
 
-function getClient() {
-  const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) {
-    throw new Error("DATABASE_URL is not configured in .env.local");
+function getCleanDbUrl(): string {
+  let url = process.env.DATABASE_URL || FALLBACK_DATABASE_URL;
+  if (!url || typeof url !== "string") {
+    url = FALLBACK_DATABASE_URL;
   }
+  // Clean quotes and remove channel_binding for HTTP fetch compatibility
+  url = url.trim().replace(/^["']|["']$/g, "");
+  url = url.replace(/&?channel_binding=[^&]+/g, "");
+  return url;
+}
+
+function getClient() {
   if (!clientInstance) {
-    clientInstance = neon(dbUrl);
+    const url = getCleanDbUrl();
+    clientInstance = neon(url);
   }
   return clientInstance;
 }
@@ -21,7 +33,6 @@ export const sql = async <T = any>(
   params: any[] = []
 ): Promise<T[]> => {
   const client = getClient();
-  // Neon v1+ requires client.query(queryText, params) for parameterized queries with placeholders ($1, $2, etc.)
   if (typeof client.query === "function") {
     const result = await client.query(queryText, params);
     return result as T[];
