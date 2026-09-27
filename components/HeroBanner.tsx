@@ -1,9 +1,17 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { Zap, ShieldCheck, Users, Play, ArrowRight, Heart, CheckCircle2, User, Wallet, Headphones } from "lucide-react";
 import CheckoutModal from "@/components/CheckoutModal";
+import { useStoreSettings } from "@/hooks/useStoreSettings";
+import {
+  RobuxPackage,
+  getStoredPackages,
+  saveStoredPackages,
+  getComputedPackageBadge,
+  defaultPackages,
+} from "@/lib/adminStore";
 
 interface HeroBannerProps {
   onTopUpClick?: () => void;
@@ -11,14 +19,16 @@ interface HeroBannerProps {
 }
 
 export default function HeroBanner({ onTopUpClick, onHowToOrderClick }: HeroBannerProps) {
+  const { settings } = useStoreSettings();
   const [username, setUsername] = useState("");
-  const [selectedNominal, setSelectedNominal] = useState(1200);
+  const [packages, setPackages] = useState<RobuxPackage[]>(defaultPackages);
+  const [selectedNominal, setSelectedNominal] = useState(1800);
   const [isCheckingUser, setIsCheckingUser] = useState(false);
   const [verifiedUser, setVerifiedUser] = useState<string | null>(null);
   const [checkError, setCheckError] = useState<string | null>(null);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  
+
   // Custom Slider & Scroll Sync
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollPercent, setScrollPercent] = useState(0);
@@ -26,15 +36,66 @@ export default function HeroBanner({ onTopUpClick, onHowToOrderClick }: HeroBann
   const [startX, setStartX] = useState(0);
   const [scrollLeftState, setScrollLeftState] = useState(0);
 
-  const robuxPackages = [
-    { amount: 400, price: "Rp 30.500", popular: false },
-    { amount: 800, price: "Rp 69.000", popular: false },
-    { amount: 1200, price: "Rp 104.000", popular: true },
-    { amount: 1600, price: "Rp 138.000", popular: false },
-    { amount: 2500, price: "Rp 209.000", popular: false },
-    { amount: 5000, price: "Rp 409.000", popular: false },
-    { amount: 10000, price: "Rp 810.000", popular: false },
-  ];
+  // Sync packages from localStorage and backend
+  useEffect(() => {
+    const resolveInitialNominal = (pkgs: RobuxPackage[], currentVal?: number) => {
+      if (currentVal) {
+        const found = pkgs.find((p) => p.amount === currentVal);
+        if (found && found.status === "active" && found.inStock !== false) {
+          return currentVal;
+        }
+      }
+      const pop = pkgs.find(
+        (p) =>
+          p.status === "active" &&
+          p.inStock !== false &&
+          getComputedPackageBadge(p, undefined, settings.selectedPromoPackageId, settings.isPromoActive) === "POPULER"
+      );
+      if (pop) return pop.amount;
+      const firstActive = pkgs.find((p) => p.status === "active" && p.inStock !== false);
+      return firstActive ? firstActive.amount : pkgs[0]?.amount || 1800;
+    };
+
+    // 1. Initial load from local storage
+    const localPkgs = getStoredPackages();
+    if (localPkgs.length > 0) {
+      setPackages(localPkgs);
+      setSelectedNominal((prev) => resolveInitialNominal(localPkgs, prev));
+    }
+
+    // 2. Fetch from backend API
+    const fetchPackages = async () => {
+      try {
+        const res = await fetch("/api/products");
+        const data = await res.json();
+        if (data.success && Array.isArray(data.products) && data.products.length > 0) {
+          setPackages(data.products);
+          saveStoredPackages(data.products);
+          setSelectedNominal((prev) => resolveInitialNominal(data.products, prev));
+        }
+      } catch (err) {
+        console.warn("Could not fetch products for storefront:", err);
+      }
+    };
+
+    fetchPackages();
+
+    // 3. Storage event for real-time synchronization across browser tabs
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "vietblox_admin_packages_v2" && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setPackages(parsed);
+            setSelectedNominal((prev) => resolveInitialNominal(parsed, prev));
+          }
+        } catch {}
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [settings.selectedPromoPackageId, settings.isPromoActive]);
 
   const paymentLogos = [
     { name: "QRIS", src: "/payments/qris.svg" },
@@ -102,11 +163,12 @@ export default function HeroBanner({ onTopUpClick, onHowToOrderClick }: HeroBann
 
   const handleQuickOrder = () => {
     const target = verifiedUser || username.trim() || "kamu";
-    const selectedPkg = robuxPackages.find((p) => p.amount === selectedNominal);
+    const selectedPkg = packages.find((p) => p.amount === selectedNominal) || packages[0];
+    const cleanWa = settings.whatsappNumber.replace(/[^0-9]/g, "") || "6281234567890";
     const message = encodeURIComponent(
-      `Halo Admin VietBlox, saya ingin Top Up Robux:\n- Username Roblox: ${target}\n- Paket: ${selectedNominal} Robux (${selectedPkg?.price})\nMohon diproses ya kak!`
+      `Halo Admin ${settings.storeName}, saya ingin Top Up Robux:\n- Username Roblox: ${target}\n- Paket: ${selectedNominal} Robux (${selectedPkg?.price})\nMohon diproses ya kak!`
     );
-    window.open(`https://wa.me/6281234567890?text=${message}`, "_blank");
+    window.open(`https://wa.me/${cleanWa}?text=${message}`, "_blank");
   };
 
   // Update slider progress on scroll
@@ -156,12 +218,10 @@ export default function HeroBanner({ onTopUpClick, onHowToOrderClick }: HeroBann
     <section id="beranda" className="relative w-full overflow-hidden isolate">
       {/* 1. Full-width Background Image */}
       <div className="absolute inset-0 z-0">
-        <Image
-          src="/banner_background.jpg"
-          alt="VietBlox Roblox City Banner Background"
-          fill
-          className="object-cover object-center lg:object-right"
-          priority
+        <img
+          src={settings.bannerImageUrl || "/banner_background.jpg"}
+          alt={`${settings.storeName} Banner Background`}
+          className="w-full h-full object-cover object-center lg:object-right"
         />
         {/* Subtle horizontal gradient overlay for optimal readability on left */}
         <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-transparent lg:from-white/90 lg:via-white/50 lg:to-transparent" />
@@ -460,41 +520,69 @@ export default function HeroBanner({ onTopUpClick, onHowToOrderClick }: HeroBann
                 onMouseMove={handleMouseMove}
                 className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto no-scrollbar pt-2.5 pb-1.5 cursor-grab active:cursor-grabbing select-none scroll-smooth snap-x snap-mandatory"
               >
-                {robuxPackages.map((pkg) => {
+                {packages.filter((p) => p.status !== "inactive").map((pkg) => {
                   const isSelected = selectedNominal === pkg.amount;
+                  const isSoldOut = pkg.status === "sold_out" || pkg.inStock === false;
+                  const badge = getComputedPackageBadge(
+                    pkg,
+                    undefined,
+                    settings.selectedPromoPackageId,
+                    settings.isPromoActive
+                  );
+
                   return (
                     <button
-                      key={pkg.amount}
-                      onClick={() => setSelectedNominal(pkg.amount)}
+                      key={pkg.id || pkg.amount}
+                      onClick={() => {
+                        if (!isSoldOut) setSelectedNominal(pkg.amount);
+                      }}
+                      disabled={isSoldOut}
                       className={`relative flex-shrink-0 flex flex-col items-center justify-center min-w-[95px] sm:min-w-[115px] py-2 px-2.5 sm:px-3 rounded-xl border transition-all duration-200 cursor-pointer snap-start ${
-                        isSelected
+                        isSoldOut
+                          ? "bg-rose-50/40 border-rose-200/90 opacity-65 cursor-not-allowed"
+                          : isSelected
                           ? "bg-[#FFF0F5] border-[#FF2E74] shadow-[0_4px_12px_rgba(255,46,116,0.22)] scale-102 ring-1 ring-[#FF2E74]"
                           : "bg-white border-slate-200/80 hover:border-pink-200 hover:bg-pink-50/40"
                       }`}
                     >
-                      {/* Popular Badge */}
-                      {pkg.popular && (
+                      {/* Dynamic Badges */}
+                      {badge === "SOLDOUT" && (
+                        <div className="absolute -top-2.5 px-2 py-0.5 rounded-full bg-rose-600 text-white text-[8px] font-black tracking-wider uppercase shadow-xs">
+                          🚫 Habis
+                        </div>
+                      )}
+                      {badge === "POPULER" && (
                         <div className="absolute -top-2.5 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[8px] font-black tracking-wider uppercase shadow-xs">
                           🔥 Populer
                         </div>
                       )}
+                      {badge === "PROMO" && (
+                        <div className="absolute -top-2.5 px-2 py-0.5 rounded-full bg-gradient-to-r from-[#FF2E74] to-[#FF5588] text-white text-[8px] font-black tracking-wider uppercase shadow-xs">
+                          ⚡ Promo
+                        </div>
+                      )}
+                      {badge === "SULTAN" && (
+                        <div className="absolute -top-2.5 px-2 py-0.5 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[8px] font-black tracking-wider uppercase shadow-xs">
+                          👑 Sultan
+                        </div>
+                      )}
 
                       {/* Robux Logo + Nominal */}
-                      <div className="flex items-center gap-1.5 font-black text-xs sm:text-sm text-slate-900">
+                      <div className={`flex items-center gap-1.5 font-black text-xs sm:text-sm ${isSoldOut ? "text-slate-400" : "text-slate-900"}`}>
                         <div className="relative w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0">
                           <Image
                             src="/robux.webp"
                             alt="Robux"
                             fill
-                            className="object-contain"
+                            className={`object-contain ${isSoldOut ? "grayscale opacity-50" : ""}`}
                           />
                         </div>
                         <span>{pkg.amount.toLocaleString("id-ID")}</span>
                       </div>
                       
                       {/* Price */}
-                      <span className="text-[10px] sm:text-[11px] font-bold text-emerald-600 mt-0.5">
-                        {pkg.price}
+                      <span className={`text-[10px] sm:text-[11px] font-bold mt-0.5 ${isSoldOut ? "text-rose-500 font-extrabold" : "text-emerald-600"}`}>
+                        {isSoldOut ? "Stok Habis" : pkg.price}
                       </span>
                     </button>
                   );
@@ -524,36 +612,47 @@ export default function HeroBanner({ onTopUpClick, onHowToOrderClick }: HeroBann
         </div>
 
         {/* ─── Pesan Sekarang CTA Row ─── */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-          <button
-            onClick={() => {
-              if (!verifiedUser) return;
-              setIsCheckoutOpen(true);
-            }}
-            disabled={!verifiedUser}
-            title={!verifiedUser ? "Cek username dulu" : undefined}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-black text-xs sm:text-sm transition-all ${
-              verifiedUser
-                ? "bg-gradient-to-r from-[#FF2E74] via-[#FF4D8D] to-[#FF6B6B] text-white shadow-[0_6px_20px_rgba(255,46,116,0.35)] hover:shadow-[0_8px_25px_rgba(255,46,116,0.5)] active:scale-98 cursor-pointer"
-                : "bg-slate-200 text-slate-500 cursor-not-allowed"
-            }`}
-          >
-            {verifiedUser ? (
-              <>
-                <span>Pesan Sekarang ({robuxPackages.find(p => p.amount === selectedNominal)?.price})</span>
-                <ArrowRight className="w-4 h-4" />
-              </>
-            ) : (
-              <span>Cek Username Terlebih Dahulu</span>
-            )}
-          </button>
-          {verifiedUser && (
-            <div className="flex-shrink-0 flex items-center justify-center gap-1.5 px-3 py-2 sm:py-3 rounded-2xl bg-emerald-50 border border-emerald-200">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-              <span className="text-xs font-black text-emerald-700 truncate max-w-[200px]">{verifiedUser}</span>
+        {(() => {
+          const selectedPkg = packages.find((p) => p.amount === selectedNominal) || packages[0];
+          const isSelectedSoldOut = selectedPkg?.status === "sold_out" || selectedPkg?.inStock === false;
+
+          return (
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+              <button
+                onClick={() => {
+                  if (!verifiedUser || isSelectedSoldOut) return;
+                  setIsCheckoutOpen(true);
+                }}
+                disabled={!verifiedUser || isSelectedSoldOut}
+                title={isSelectedSoldOut ? "Stok paket ini sedang habis" : !verifiedUser ? "Cek username dulu" : undefined}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-black text-xs sm:text-sm transition-all ${
+                  isSelectedSoldOut
+                    ? "bg-rose-100 text-rose-600 border border-rose-200 cursor-not-allowed"
+                    : verifiedUser
+                    ? "bg-gradient-to-r from-[#FF2E74] via-[#FF4D8D] to-[#FF6B6B] text-white shadow-[0_6px_20px_rgba(255,46,116,0.35)] hover:shadow-[0_8px_25px_rgba(255,46,116,0.5)] active:scale-98 cursor-pointer"
+                    : "bg-slate-200 text-slate-500 cursor-not-allowed"
+                }`}
+              >
+                {isSelectedSoldOut ? (
+                  <span>🚫 Stok Habis — Silakan Pilih Nominal Lain</span>
+                ) : verifiedUser ? (
+                  <>
+                    <span>Pesan Sekarang ({selectedPkg?.price || packages[0]?.price})</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                ) : (
+                  <span>Cek Username Terlebih Dahulu</span>
+                )}
+              </button>
+              {verifiedUser && (
+                <div className="flex-shrink-0 flex items-center justify-center gap-1.5 px-3 py-2 sm:py-3 rounded-2xl bg-emerald-50 border border-emerald-200">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                  <span className="text-xs font-black text-emerald-700 truncate max-w-[200px]">{verifiedUser}</span>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          );
+        })()}
 
         {/* ─── 4 Feature Cards Below Top Up Widget ─── */}
         
@@ -623,7 +722,7 @@ export default function HeroBanner({ onTopUpClick, onHowToOrderClick }: HeroBann
         onClose={() => setIsCheckoutOpen(false)}
         username={verifiedUser || username}
         robuxAmount={selectedNominal}
-        price={robuxPackages.find((p) => p.amount === selectedNominal)?.price || ""}
+        price={packages.find((p) => p.amount === selectedNominal)?.price || packages[0]?.price || ""}
       />
     </section>
   );
