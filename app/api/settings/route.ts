@@ -77,7 +77,25 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error: any) {
     console.error("GET /api/settings error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    // Return default settings safely with 200 OK so storefront never crashes
+    return NextResponse.json({
+      success: true,
+      settings: {
+        storeName: "VietBlox",
+        whatsappNumber: "6281234567890",
+        qrisImageUrl: "/payments/qris.svg",
+        logoImageUrl: "/logo_background.PNG",
+        bannerImageUrl: "/banner_background.jpg",
+        isPromoActive: true,
+        selectedPromoPackageId: "pkg-2200",
+        promoRobuxAmount: 2200,
+        promoDiscountPrice: 45000,
+        promoTagline: "Top Up Robux Instant, Cepat, Legal, Aman & Bergaransi 100% Uang",
+        promoEndDate: "1 Oktober 2026, 06:59 WIB",
+        defaultActivationUrl: "",
+      },
+      warning: error.message,
+    });
   }
 }
 
