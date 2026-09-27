@@ -21,6 +21,9 @@ import {
   QrCode,
   X,
   Sparkles,
+  Lock,
+  KeyRound,
+  ShieldCheck,
 } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import { getStoredPackages, RobuxPackage } from "@/lib/adminStore";
@@ -72,6 +75,7 @@ export default function StoreSettingsView() {
   const [isSection1Open, setIsSection1Open] = useState(true);
   const [isSection2Open, setIsSection2Open] = useState(true);
   const [isSection3Open, setIsSection3Open] = useState(true);
+  const [isSection4Open, setIsSection4Open] = useState(true);
 
   // Modal Set Date & Time states
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
@@ -193,10 +197,11 @@ export default function StoreSettingsView() {
   };
 
   const toggleAllSections = () => {
-    const areAllOpen = isSection1Open && isSection2Open && isSection3Open;
+    const areAllOpen = isSection1Open && isSection2Open && isSection3Open && isSection4Open;
     setIsSection1Open(!areAllOpen);
     setIsSection2Open(!areAllOpen);
     setIsSection3Open(!areAllOpen);
+    setIsSection4Open(!areAllOpen);
   };
 
   // Image Upload Handlers (Base64 WebP Compressed to < 35KB)
@@ -873,6 +878,66 @@ export default function StoreSettingsView() {
               </button>
             </div>
 
+          </div>
+        )}
+      </div>
+
+      {/* ═════════════════════════════════════════════════════════════════ */}
+      {/* SECTION 4: KEAMANAN & KREDENSIAL ADMIN                          */}
+      {/* ═════════════════════════════════════════════════════════════════ */}
+      <div className="rounded-3xl bg-white border border-pink-200/90 shadow-xs overflow-hidden transition-all duration-200">
+        
+        {/* Accordion Header */}
+        <div
+          onClick={() => setIsSection4Open(!isSection4Open)}
+          className="p-4 sm:p-5 flex items-center justify-between gap-3 cursor-pointer hover:bg-pink-50/40 select-none transition-colors"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-pink-50 text-[#FF2E74] flex items-center justify-center flex-shrink-0">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
+                KEAMANAN & KREDENSIAL ADMIN
+              </h3>
+              <p className="text-xs text-slate-500 font-medium">
+                Kredensial login admin terproteksi penuh via Environment Variables (.env.local)
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="hidden md:inline-flex px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-bold border border-emerald-200/60">
+              ● Enkripsi Aktif (.env)
+            </span>
+            <div className="w-8 h-8 rounded-xl bg-pink-50 flex items-center justify-center text-[#FF2E74]">
+              {isSection4Open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </div>
+          </div>
+        </div>
+
+        {/* Accordion Body */}
+        {isSection4Open && (
+          <div className="p-5 sm:p-6 pt-4 border-t border-pink-100 flex flex-col gap-4 animate-in fade-in duration-200">
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col gap-2.5">
+              <div className="flex items-center gap-2 text-xs font-black text-slate-800">
+                <Lock className="w-4 h-4 text-[#FF2E74]" />
+                <span>Pengaturan Akses Login Administrator</span>
+              </div>
+              <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                Untuk menjamin keamanan level produksi, username dan password admin dikelola secara ketat melalui <strong>Environment Variables (<code className="text-[#FF2E74] font-bold">.env.local</code> / Cloudflare Variables)</strong>. Kredensial tidak tersimpan dalam bentuk teks biasa di browser.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1 pt-3 border-t border-slate-200">
+                <div className="flex flex-col gap-1 p-3 rounded-xl bg-white border border-slate-200">
+                  <span className="text-[11px] font-bold text-slate-400">Variabel Username:</span>
+                  <code className="text-xs font-black text-slate-800 font-mono">ADMIN_USERNAME</code>
+                </div>
+                <div className="flex flex-col gap-1 p-3 rounded-xl bg-white border border-slate-200">
+                  <span className="text-[11px] font-bold text-slate-400">Variabel Password:</span>
+                  <code className="text-xs font-black text-slate-800 font-mono">ADMIN_PASSWORD</code>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
