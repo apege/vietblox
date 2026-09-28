@@ -481,14 +481,42 @@ function TrackingContent() {
                 <div className="lg:col-span-3 flex flex-col gap-2.5 lg:pl-2">
                   
                   {/* Status Badge Card */}
-                  <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-[#EEFAF4] border border-[#BDEFD8] text-emerald-800 shadow-2xs">
-                    <div className="w-8 h-8 rounded-full bg-[#10B981] text-white flex items-center justify-center shrink-0 shadow-xs">
-                      <Check className="w-4 h-4 stroke-[3]" />
+                  <div className={`flex items-center gap-3 p-3.5 rounded-2xl border shadow-2xs ${
+                    activeOrder.orderStatus === "cancelled"
+                      ? "bg-[#FFF1F2] border-[#FECDD3] text-rose-800"
+                      : activeOrder.paymentStatus === "paid" || activeOrder.orderStatus !== "pending"
+                      ? "bg-[#EEFAF4] border-[#BDEFD8] text-emerald-800"
+                      : "bg-[#FFFBEB] border-[#FDE68A] text-amber-800"
+                  }`}>
+                    <div className={`w-8 h-8 rounded-full text-white flex items-center justify-center shrink-0 shadow-xs ${
+                      activeOrder.orderStatus === "cancelled"
+                        ? "bg-rose-500"
+                        : activeOrder.paymentStatus === "paid" || activeOrder.orderStatus !== "pending"
+                        ? "bg-[#10B981]"
+                        : "bg-amber-500"
+                    }`}>
+                      {activeOrder.orderStatus === "cancelled" ? (
+                        <X className="w-4 h-4 stroke-[3]" />
+                      ) : activeOrder.paymentStatus === "paid" || activeOrder.orderStatus !== "pending" ? (
+                        <Check className="w-4 h-4 stroke-[3]" />
+                      ) : (
+                        <Clock className="w-4 h-4 stroke-[2.5]" />
+                      )}
                     </div>
                     <div className="flex flex-col min-w-0">
                       <span className="text-xs font-semibold text-slate-500 leading-tight">Pembayaran</span>
-                      <span className="text-sm sm:text-base font-black text-[#10B981] leading-tight mt-0.5">
-                        {activeOrder.paymentStatus === "paid" || activeOrder.orderStatus !== "pending" ? "Berhasil" : "Menunggu"}
+                      <span className={`text-sm sm:text-base font-black leading-tight mt-0.5 ${
+                        activeOrder.orderStatus === "cancelled"
+                          ? "text-rose-600"
+                          : activeOrder.paymentStatus === "paid" || activeOrder.orderStatus !== "pending"
+                          ? "text-[#10B981]"
+                          : "text-amber-600"
+                      }`}>
+                        {activeOrder.orderStatus === "cancelled"
+                          ? "Dibatalkan"
+                          : activeOrder.paymentStatus === "paid" || activeOrder.orderStatus !== "pending"
+                          ? "Berhasil"
+                          : "Menunggu"}
                       </span>
                       <span className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">
                         {activeOrder.date}
