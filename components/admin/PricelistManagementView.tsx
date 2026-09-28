@@ -38,12 +38,42 @@ export default function PricelistManagementView({
   }, [packages]);
 
   // Form states for Add / Edit (Badge is computed automatically)
-  const [formAmount, setFormAmount] = useState<number>(1800);
-  const [formPrice, setFormPrice] = useState<string>("Rp 35.000");
+  const [formAmount, setFormAmount] = useState<number>(2000);
+  const [formAmountDisplay, setFormAmountDisplay] = useState<string>("2.000");
+  const [formPrice, setFormPrice] = useState<string>("Rp 40.000");
   const [formStatus, setFormStatus] = useState<PackageStatus>("active");
+
+  const formatRupiah = (val: string | number) => {
+    const digits = String(val).replace(/\D/g, "");
+    if (!digits) return "";
+    return `Rp ${Number(digits).toLocaleString("id-ID")}`;
+  };
+
+  const handleRobuxChange = (val: string) => {
+    const digits = val.replace(/\D/g, "");
+    if (!digits) {
+      setFormAmountDisplay("");
+      setFormAmount(0);
+      return;
+    }
+    const num = parseInt(digits, 10);
+    setFormAmount(num);
+    setFormAmountDisplay(num.toLocaleString("id-ID"));
+  };
+
+  const handlePriceChange = (val: string) => {
+    const digits = val.replace(/\D/g, "");
+    if (!digits) {
+      setFormPrice("");
+      return;
+    }
+    const num = parseInt(digits, 10);
+    setFormPrice(`Rp ${num.toLocaleString("id-ID")}`);
+  };
 
   const openAddModal = () => {
     setFormAmount(2000);
+    setFormAmountDisplay("2.000");
     setFormPrice("Rp 40.000");
     setFormStatus("active");
     setEditingPackage(null);
@@ -53,16 +83,20 @@ export default function PricelistManagementView({
   const openEditModal = (pkg: RobuxPackage) => {
     setEditingPackage(pkg);
     setFormAmount(pkg.amount);
-    setFormPrice(pkg.price);
+    setFormAmountDisplay(pkg.amount ? pkg.amount.toLocaleString("id-ID") : "");
+    setFormPrice(formatRupiah(pkg.price || pkg.numericPrice || 0));
     setFormStatus(pkg.status || (pkg.inStock ? "active" : "sold_out"));
     setIsAddModalOpen(true);
   };
 
   const handleSaveForm = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formAmount || !formPrice.trim()) return;
+    const numericAmount = formAmount || parseInt(formAmountDisplay.replace(/\D/g, ""), 10) || 0;
+    const numericPrice = parseInt(formPrice.replace(/\D/g, ""), 10) || 0;
 
-    const numericPrice = parseInt(formPrice.replace(/[^0-9]/g, "")) || 0;
+    if (!numericAmount || !numericPrice) return;
+
+    const formattedPrice = `Rp ${numericPrice.toLocaleString("id-ID")}`;
     const inStock = formStatus === "active";
 
     if (editingPackage) {
@@ -71,8 +105,8 @@ export default function PricelistManagementView({
         p.id === editingPackage.id
           ? {
               ...p,
-              amount: formAmount,
-              price: formPrice.trim(),
+              amount: numericAmount,
+              price: formattedPrice,
               numericPrice,
               status: formStatus,
               inStock,
@@ -84,9 +118,9 @@ export default function PricelistManagementView({
     } else {
       // Create new
       const newPkg: RobuxPackage = {
-        id: `pkg-${formAmount}-${Date.now()}`,
-        amount: formAmount,
-        price: formPrice.trim(),
+        id: `pkg-${numericAmount}-${Date.now()}`,
+        amount: numericAmount,
+        price: formattedPrice,
         numericPrice,
         status: formStatus,
         inStock,
@@ -352,13 +386,12 @@ export default function PricelistManagementView({
                 </label>
                 <div className="relative flex items-center">
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     required
-                    min={100}
-                    step={100}
-                    value={formAmount}
-                    onChange={(e) => setFormAmount(parseInt(e.target.value) || 0)}
-                    placeholder="Contoh: 1800"
+                    value={formAmountDisplay}
+                    onChange={(e) => handleRobuxChange(e.target.value)}
+                    placeholder="Contoh: 1.800"
                     className="w-full pl-3.5 pr-16 py-2.5 rounded-xl border border-slate-200 focus:border-[#FF2E74] focus:ring-2 focus:ring-pink-100 outline-none font-bold text-slate-900"
                   />
                   <span className="absolute right-3.5 text-xs font-bold text-slate-400">
@@ -374,9 +407,10 @@ export default function PricelistManagementView({
                 </label>
                 <input
                   type="text"
+                  inputMode="numeric"
                   required
                   value={formPrice}
-                  onChange={(e) => setFormPrice(e.target.value)}
+                  onChange={(e) => handlePriceChange(e.target.value)}
                   placeholder="Contoh: Rp 35.000"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#FF2E74] focus:ring-2 focus:ring-pink-100 outline-none font-bold text-slate-900"
                 />
