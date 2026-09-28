@@ -1,18 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 
-// Helper to format date in Indonesian locale
+// Helper to format date in Indonesian locale with Asia/Jakarta (WIB) timezone
 function formatIndoDate(d: Date = new Date()) {
-  const months = [
-    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-  ];
-  const day = d.getDate();
-  const month = months[d.getMonth()];
-  const year = d.getFullYear();
-  const hours = String(d.getHours()).padStart(2, "0");
-  const minutes = String(d.getMinutes()).padStart(2, "0");
-  return `${day} ${month} ${year} pukul ${hours}:${minutes} WIB`;
+  try {
+    const formatter = new Intl.DateTimeFormat("id-ID", {
+      timeZone: "Asia/Jakarta",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    const parts = formatter.formatToParts(d);
+    const get = (type: string) => parts.find((p) => p.type === type)?.value || "";
+    return `${get("day")} ${get("month")} ${get("year")} pukul ${get("hour")}:${get("minute")} WIB`;
+  } catch {
+    return d.toLocaleString("id-ID");
+  }
+}
+
+function formatShortIndoDate(d: Date = new Date()) {
+  try {
+    const formatter = new Intl.DateTimeFormat("id-ID", {
+      timeZone: "Asia/Jakarta",
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    const parts = formatter.formatToParts(d);
+    const get = (type: string) => parts.find((p) => p.type === type)?.value || "";
+    return `${get("day")} ${get("month")}, ${get("hour")}.${get("minute")}`;
+  } catch {
+    return d.toLocaleString("id-ID");
+  }
 }
 
 /**
@@ -69,7 +93,7 @@ export async function GET(request: NextRequest) {
     // Map rows to match frontend OrderItem format
     const mapped = rows.map((r: any) => {
       const createdDate = new Date(r.created_at);
-      const shortDate = `${createdDate.getDate()} ${["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"][createdDate.getMonth()]}, ${String(createdDate.getHours()).padStart(2,"0")}.${String(createdDate.getMinutes()).padStart(2,"0")}`;
+      const shortDate = formatShortIndoDate(createdDate);
 
       const statusMap: Record<string, { status: "masuk" | "diproses" | "selesai" | "dibatalkan"; label: string }> = {
         pending: { status: "masuk", label: "Menunggu Bayar" },
