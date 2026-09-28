@@ -495,16 +495,23 @@ export default function CheckoutModal({
 
             <div className="w-full flex flex-col gap-2">
               <a
-                href={`/tracking?username=${encodeURIComponent(username)}&order_code=${createdOrderCode}`}
-                className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#FF2E74] to-[#FF6B6B] text-white font-black text-sm shadow-[0_6px_20px_rgba(255,46,116,0.35)] hover:opacity-90 transition-all text-center"
+                href={`https://wa.me/${cleanWa}?text=${encodeURIComponent(
+                  paymentMethod === "whatsapp"
+                    ? `Halo Admin ${settings.storeName}, saya ingin konfirmasi pesanan:\n- Kode Order: #${createdOrderCode}\n- Username Roblox: ${username}\n- Paket: ${robuxAmount.toLocaleString("id-ID")} Robux (${price})\n- No. WA: +62${waNumber}\n\nMohon diproses ya kak!`
+                    : `Halo Admin ${settings.storeName}, saya sudah melakukan pembayaran via QRIS Website:\n- Kode Order: #${createdOrderCode}\n- Username Roblox: ${username}\n- Paket: ${robuxAmount.toLocaleString("id-ID")} Robux (${price})\n- No. WA: +62${waNumber}\n\nSaya lampirkan bukti transfernya ya min. Mohon dicek dan diproses, terima kasih!`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#25D366] to-[#128C7E] text-white font-black text-sm shadow-[0_6px_20px_rgba(37,211,102,0.35)] hover:opacity-95 transition-all text-center flex items-center justify-center gap-2"
               >
-                Lacak Status Pesanan Saya
+                <MessageCircle className="w-4 h-4 fill-white" />
+                <span>Buka Chat WhatsApp Admin</span>
               </a>
               <button
                 onClick={handleClose}
-                className="w-full py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all"
+                className="w-full py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"
               >
-                Kembali ke Toko
+                Selesai & Kembali ke Toko
               </button>
             </div>
           </div>
