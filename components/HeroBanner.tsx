@@ -59,8 +59,9 @@ export default function HeroBanner({ onTopUpClick, onHowToOrderClick }: HeroBann
     // 1. Initial load from local storage
     const localPkgs = getStoredPackages();
     if (localPkgs.length > 0) {
-      setPackages(localPkgs);
-      setSelectedNominal((prev) => resolveInitialNominal(localPkgs, prev));
+      const sorted = [...localPkgs].sort((a, b) => a.amount - b.amount);
+      setPackages(sorted);
+      setSelectedNominal((prev) => resolveInitialNominal(sorted, prev));
     }
 
     // 2. Fetch from backend API
@@ -69,9 +70,10 @@ export default function HeroBanner({ onTopUpClick, onHowToOrderClick }: HeroBann
         const res = await fetch("/api/products");
         const data = await res.json();
         if (data.success && Array.isArray(data.products) && data.products.length > 0) {
-          setPackages(data.products);
-          saveStoredPackages(data.products);
-          setSelectedNominal((prev) => resolveInitialNominal(data.products, prev));
+          const sorted = [...data.products].sort((a, b) => a.amount - b.amount);
+          setPackages(sorted);
+          saveStoredPackages(sorted);
+          setSelectedNominal((prev) => resolveInitialNominal(sorted, prev));
         }
       } catch (err) {
         console.warn("Could not fetch products for storefront:", err);
@@ -86,8 +88,9 @@ export default function HeroBanner({ onTopUpClick, onHowToOrderClick }: HeroBann
         try {
           const parsed = JSON.parse(e.newValue);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            setPackages(parsed);
-            setSelectedNominal((prev) => resolveInitialNominal(parsed, prev));
+            const sorted = [...parsed].sort((a, b) => a.amount - b.amount);
+            setPackages(sorted);
+            setSelectedNominal((prev) => resolveInitialNominal(sorted, prev));
           }
         } catch {}
       }
@@ -96,6 +99,14 @@ export default function HeroBanner({ onTopUpClick, onHowToOrderClick }: HeroBann
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
   }, [settings.selectedPromoPackageId, settings.isPromoActive]);
+
+  // Ensure scroll position is at the very beginning (400 Robux) on mount and package load
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = 0;
+      setScrollPercent(0);
+    }
+  }, [packages.length]);
 
   const paymentLogos = [
     { name: "QRIS", src: "/payments/qris.svg" },
