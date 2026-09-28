@@ -154,6 +154,13 @@ export async function PATCH(request: NextRequest) {
     // 1. Batch sync all packages
     if (body.packages && Array.isArray(body.packages)) {
       const incomingPkgs: RobuxPackage[] = body.packages;
+      const incomingRobuxAmounts = incomingPkgs.map((p) => p.amount).filter((a) => typeof a === "number" && a > 0);
+
+      // If packages were removed in the UI, delete them from Neon DB
+      if (incomingRobuxAmounts.length > 0) {
+        const placeholders = incomingRobuxAmounts.map((_, i) => `$${i + 1}`).join(", ");
+        await sql(`DELETE FROM public.products WHERE robux NOT IN (${placeholders})`, incomingRobuxAmounts);
+      }
 
       for (const p of incomingPkgs) {
         const numericPrice = p.numericPrice || parseInt(String(p.price).replace(/[^0-9]/g, "")) || 0;
