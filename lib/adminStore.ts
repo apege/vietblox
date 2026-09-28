@@ -46,6 +46,9 @@ const STORAGE_KEY_PACKAGES = "vietblox_admin_packages_v2";
 const STORAGE_KEY_STORE_CONFIG = "vietblox_store_config_v2";
 
 export const defaultPackages: RobuxPackage[] = [
+  { id: "pkg-400", amount: 400, price: "Rp 10.000", numericPrice: 10000, status: "sold_out", inStock: false },
+  { id: "pkg-900", amount: 900, price: "Rp 20.000", numericPrice: 20000, status: "sold_out", inStock: false },
+  { id: "pkg-1200", amount: 1200, price: "Rp 25.000", numericPrice: 25000, status: "sold_out", inStock: false },
   { id: "pkg-1800", amount: 1800, price: "Rp 35.000", numericPrice: 35000, status: "active", inStock: true },
   { id: "pkg-2200", amount: 2200, price: "Rp 45.000", numericPrice: 45000, status: "active", inStock: true },
   { id: "pkg-2700", amount: 2700, price: "Rp 50.000", numericPrice: 50000, status: "active", inStock: true },
