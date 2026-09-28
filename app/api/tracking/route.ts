@@ -46,9 +46,24 @@ export async function GET(request: NextRequest) {
     );
 
     const mapped = rows.map((r: any) => {
-      const createdDate = new Date(r.created_at);
-      const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-      const formattedDate = `${createdDate.getDate()} ${months[createdDate.getMonth()]} ${createdDate.getFullYear()}, ${String(createdDate.getHours()).padStart(2, "0")}:${String(createdDate.getMinutes()).padStart(2, "0")} WIB`;
+      let formattedDate = "-";
+      try {
+        const createdDate = new Date(r.created_at);
+        const formatter = new Intl.DateTimeFormat("id-ID", {
+          timeZone: "Asia/Jakarta",
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+        const parts = formatter.formatToParts(createdDate);
+        const get = (type: string) => parts.find((p) => p.type === type)?.value || "";
+        formattedDate = `${get("day")} ${get("month")} ${get("year")}, ${get("hour")}:${get("minute")} WIB`;
+      } catch {
+        formattedDate = new Date(r.created_at).toLocaleString("id-ID");
+      }
 
       const statusLabels: Record<string, { label: string; step: number; color: string }> = {
         pending: { label: "Menunggu Pembayaran", step: 1, color: "text-amber-600 bg-amber-50 border-amber-200" },
