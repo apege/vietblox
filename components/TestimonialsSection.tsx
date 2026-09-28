@@ -211,10 +211,6 @@ export default function TestimonialsSection() {
                                   />
                                 ))}
                               </div>
-                              <span className="text-[10px] text-slate-400">•</span>
-                              <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium">
-                                {item.time}
-                              </span>
                             </div>
                           </div>
                         </div>
